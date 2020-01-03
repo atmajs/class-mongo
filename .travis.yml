@@ -1,0 +1,15 @@
+services:
+    - mongodb
+
+before_script:
+  - npm run build &
+  - npm run server &
+  - sleep 5
+
+script:
+  - "npm test"
+
+language: node_js
+
+node_js:
+  - "latest"
