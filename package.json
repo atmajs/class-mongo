@@ -81,7 +81,7 @@
     },
     "dependencies": {
         "@types/mongodb": "^3.3.14",
-        "atma-utils": "^0.1.31",
+        "atma-utils": "^0.1.33",
         "class-json": "^0.2.71",
         "mongodb": "^3.4.1"
     },
