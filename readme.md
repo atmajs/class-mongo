@@ -1,4 +1,4 @@
-## <img src='assets/logo.jpg' style='vertical-align:middle'/> `class-mongo` / MongoDB persistence layer
+## ![logo](assets/logo.png) `class-mongo` / MongoDB persistence layer
 
 Lightweight but powerful MongoDB persistance on top of class entities.
 
