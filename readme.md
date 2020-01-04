@@ -1,13 +1,28 @@
-## ![logo](assets/logo.png) `class-mongo` / MongoDB persistence layer
+<p align='center'>
+    <img src='assets/logo.png'/>
+</p>
 
-Lightweight but powerful MongoDB persistance on top of class entities.
+<h2 align="center"> <code>class-mongo</code> / MongoDB persistence layer</h2>
+
+<p align="center">
+    <a href='https://travis-ci.org/atmajs/class-mongo' target='_blank'>
+        <img src='https://travis-ci.org/atmajs/class-mongo.png?branch=master' />
+    </a>
+    <a href='http://badge.fury.io/js/class-mongo' target='_blank'>
+        <img src='https://badge.fury.io/js/class-mongo.svg' />
+    </a>
+</p>
+
+Lightweight but powerful MongoDB ORM on top of class entities.
 
 > with TypeScript support
 
 
-* [class-json](https://github.com/tenbits/class-json) is used as a `Serialization` and `Validation` library. _this is loosely coupled and can be replaced with any other_
+* [class-json](https://github.com/tenbits/class-json) is used as a `Serialization` and `Validation` library. 
+> _this is loosely coupled and can be replaced with any other_
 
-* Can be decoupled from base classes: _you may want to share same models in nodejs and browser environments_
+* Can be decoupled from base classes: 
+> _you may want to share same models in nodejs and browser environments_
 
 
 ### Short example to get the feeling.
