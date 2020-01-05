@@ -1,5 +1,5 @@
-import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback } from 'mongodb'
-import { IMongoSettings, getConnectionString, getParams } from './Settings';
+import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback, UpdateWriteOpResult } from 'mongodb'
+import { getConnectionString, getParams } from './Settings';
 import MongoLib = require('mongodb');
 
 
@@ -48,11 +48,11 @@ export namespace core {
         , coll: string
         , query: FilterQuery<T>
         , data: UpdateQuery<T> | Partial<T>
-        , callback: MongoCallback<WriteOpResult>) {
+        , callback: MongoCallback<UpdateWriteOpResult>) {
 
         db
             .collection(coll)
-            .update(query, data, opt_upsertSingle, callback);
+            .updateOne(query, data, opt_upsertSingle, callback);
     };
     export function upsertMany<T = any>(db: MongoLib.Db
         , coll: string
@@ -102,11 +102,12 @@ export namespace core {
     export function count<T = any>(db: MongoLib.Db
         , coll: string
         , query: FilterQuery<T>
+        , options: MongoLib.MongoCountPreferences
         , callback: MongoCallback<number>/*<error, count>*/) {
 
         db
             .collection(coll)
-            .count(query, callback);
+            .countDocuments(query, options, callback);
     }
 }
 

@@ -1,4 +1,4 @@
-import { JsonConvert } from 'class-json'
+import { JsonConvert, Serializable } from 'class-json'
 import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db } from 'mongodb';
@@ -6,10 +6,9 @@ import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
 import { obj_patchValidate, obj_patch } from './utils/patchObject';
 
-export class MongoEntity {
+export class MongoEntity<T = any> extends Serializable<T> {
 
     _id: string
-
 
     static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
@@ -28,7 +27,7 @@ export class MongoEntity {
     }
     static async count<T extends typeof MongoEntity>(query?: FilterQuery<T>) {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_count, coll, query);
+        return cb_toPromise(db_count, coll, query, null);
     }
     static async upsert<T extends MongoEntity>(instance: T): Promise<T> {
         return EntityMethods.save(instance);

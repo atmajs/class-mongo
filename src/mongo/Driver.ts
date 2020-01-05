@@ -71,9 +71,13 @@ export function db_findMany<T = any>(coll: string, query: MongoLib.FilterQuery<T
 
 };
 
-export function db_count<T = any>(coll: string, query: MongoLib.FilterQuery<T>, callback: ICallback<number>) {
+export function db_count<T = any>(
+    coll: string
+    , query: MongoLib.FilterQuery<T>
+    , options: MongoLib.MongoCountPreferences = null
+    , callback: ICallback<number>) {
     withDb(callback, db => {
-        core.count(db, coll, query, callback);
+        core.count(db, coll, query, options, callback);
     });
 };
 

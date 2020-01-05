@@ -71,8 +71,8 @@ export function core_profiler_toggle(enable, settings) {
         _core_findSingle(
             db 
             , coll
-            , wrapQuery(query)
-            , options
+            , query
+            , wrapOptions(options)
             , analizator(coll, query));
     };
     core.findMany = function (db, coll, query, options, callback /*<error, array>*/) {
@@ -134,28 +134,36 @@ export function core_profiler_toggle(enable, settings) {
             , wrapQuery(query)
             , analizator(coll, query));
     };
-    core.count = function (db, coll, query, callback/*<error, count>*/) {
+    core.count = function (db, coll, query, options, callback/*<error, count>*/) {
         _core_count.apply(null, arguments);
         _core_count(
             db
             , coll
             , wrapQuery(query)
+            , wrapOptions(null)
             , analizator(coll, query));
     };
 }
 
 function  wrapQuery(query) {
     if (query == null)
-        return { $query: {}, $explain: true };
+        return { $query: {}, explain: true };
 
     if (query.$query) {
-        query.$explain = true;
+        query.explain = true;
         return query;
     }
     return {
         $query: query,
-        $explain: true
+        explain: true
     };
+}
+function wrapOptions (options) {
+    if (options == null) {
+        return { explain: true }
+    };
+    options.explain = true;
+    return options;
 }
 function wrapMany(array) {
     return array.forEach(function (x) {
@@ -173,33 +181,23 @@ function analizator(coll, query) {
     }
 }
 function analize(coll, query, plan, params: { isArray?: boolean, isClause?: boolean, index?: any} = {}) {
-
-    if (plan == null || typeof plan === 'number')
+    if (plan == null || typeof plan === 'number' || plan.executionStats == null) {
         return;
+    }
     if (Array.isArray(plan)) {
-        plan.forEach(function (plan, index) {
+           plan.forEach(function (plan, index) {
             params.isArray = true;
             params.index = index;
             analize(coll, query, plan, params);
         });
         return;
     }
-    if (plan.clause) {
-        plan.clause.forEach(function (plan, index) {
-            params.isClause = true;
-            params.index = index;
-            analize(coll, query, plan, index);
-        });
-        return;
-    }
-    if (plan.millis != null && plan.millis >= setts_slowLimit) {
+    if (plan.executionStats.executionTimeMillis >= setts_slowLimit) {
         add('slow', coll, query, plan, params);
         return;
     }
-    if (plan.cursor == null)
-        return;
-
-    if (plan.cursor.indexOf('BasicCursor') !== -1) {
+    
+    if (plan.queryPlanner.indexFilterSet === false) {
         add('unindexed', coll, query, plan, params);
         return;
     }
