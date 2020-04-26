@@ -22,7 +22,7 @@ export function index (opts?: IndexOptions)
 export function index (name: string, opts?: IndexOptions)
 export function index (name: string, type: string | number, opts?: IndexOptions)
 
-export function index (mix?: any, mix1?: any, mix2?: any) {
+export function index (arg1?: any, arg2?: any, arg3?: any) {
     return function (target, propertyKey?, descriptor?) {
         let meta = MongoMeta.resolveModelMeta(target);
         if (meta.indexes == null) {
@@ -31,14 +31,34 @@ export function index (mix?: any, mix1?: any, mix2?: any) {
         let indexes = meta.indexes;
         let forProp = typeof propertyKey === 'string';
         if (forProp) {
-            let name = typeof mix === 'string' ? mix : null;
-            let type = arguments.length === 3 ? mix1 : 1;
-            let opts = arguments[arguments.length - 1];
-            if (is_Object(opts) === false) {
-                opts = null;
+            let name: string;
+            let type: string | number;
+            let opts: IndexOptions;
+
+            let t1 = arg1 == null ? 'null' : typeof arg1;
+            let t2 = arg2 == null ? 'null' : typeof arg2;
+            let t3 = arg3 == null ? 'null' : typeof arg3;
+
+            if (t1 === 'object') {
+                opts = arg1;
+            }
+            if (t1 === 'string') {
+                name = arg1;
+            }
+            if (t2 === 'object') {
+                opts = arg2;
+            }
+            if (t2 === 'string' || t2 === 'number') {
+                type = arg2;
+            }
+            if (t3 === 'object') {
+                opts = arg3;
             }
 
-            let idx = name ? indexes.find(x => x.name) : null;
+            name = name ?? propertyKey;
+            type = type ?? 1;
+
+            let idx = name ? indexes.find(x => x.name === name) : null;
             if (idx == null) {
                 idx = {
                     name,
@@ -52,7 +72,7 @@ export function index (mix?: any, mix1?: any, mix2?: any) {
             IndexHandler.register(typeof target === 'function' ? target : target.constructor);
             return;
         }
-        let raw = mix as IndexRaw;
+        let raw = arg1 as IndexRaw;
         indexes.push(raw);
         IndexHandler.register(typeof target === 'function' ? target : target.constructor);
     }

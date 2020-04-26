@@ -1,8 +1,8 @@
-import { db_ensureObjectID } from './mongo/Driver';
+import { DriverUtils } from './mongo/DriverUtils';
 
 export namespace MongoUtils {
 
     export function toObjectID (id: string) {
-        return db_ensureObjectID(id);
+        return DriverUtils.ensureObjectID(id);
     };
 }

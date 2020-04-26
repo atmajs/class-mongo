@@ -19,12 +19,15 @@ const timestamp = Date.now();
 
 
 UTest({
-    $before() {
+    async $before() {
         MongoSettings.define({ db: 'test-class' });
+
+        const db = await MongoEntity.getDb();
+        await db.dropDatabase();
     },
     async $after() {
 
-        let db = await User.getDb();
+        let db = await MongoEntity.getDb();
         await db.dropDatabase();
 
         MongoProfiler.toggle(false);
@@ -125,11 +128,7 @@ UTest({
         
         await MongoIndexes.ensureAll();
 
-        
-
         let coll = await User.getCollection();
-    
-
         let info = await coll.indexInformation();
         has_(info, 
             {
@@ -139,7 +138,7 @@ UTest({
                     1
                   ]
                 ],
-                timestamp_1: [
+                timestamp: [
                   [
                     'timestamp',
                     1

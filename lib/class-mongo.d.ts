@@ -17,14 +17,21 @@ declare module 'class-mongo' {
 declare module 'class-mongo/MongoEntity' {
     import { Statics } from 'atma-utils'; 
      import { Serializable } from 'class-json';
-    import { FilterQuery, UpdateQuery, Collection, Db } from 'mongodb';
+    import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
+    import { TFindQuery } from 'class-mongo/mongo/DriverTypes';
+    interface FindOptions<T> {
+            projection: {
+                    [key in keyof T]?: number | string;
+            };
+    }
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
             static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>): Promise<InstanceType<T>>;
-            static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: any): Promise<InstanceType<T>[]>;
+            static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
             static count<T extends typeof MongoEntity>(query?: FilterQuery<T>): Promise<any>;
             static upsert<T extends MongoEntity>(instance: T): Promise<T>;
             static upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]>;
+            static upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]>;
             static del<T extends MongoEntity>(x: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
             static patch<T extends MongoEntity>(instance: T, patch: any): Promise<T>;
@@ -41,6 +48,7 @@ declare module 'class-mongo/MongoEntity' {
             new (...args: any[]): T;
     };
     export function MongoEntityFor<T>(Base: Constructor<T>): Statics<Constructor<T>> & Statics<typeof MongoEntity> & (new (...args: any[]) => T & MongoEntity<unknown>);
+    export {};
 }
 
 declare module 'class-mongo/MongoIndexes' {
@@ -60,14 +68,15 @@ declare module 'class-mongo/mongo/Settings' {
     export namespace MongoSettings {
         function define(setts: IMongoSettings): void;
     }
-    export function defineSettings(setts: IMongoSettings): void;
-    export function getConnectionString(): string;
-    export function getParams(): {
+    export function setts_define(setts: IMongoSettings): void;
+    export function setts_getConnectionString(): string;
+    export function setts_getParams(): {
         auto_reconnect: boolean;
         native_parser: boolean;
         useUnifiedTopology: boolean;
         w: number;
     };
+    export function setts_getDbName(): string;
 }
 
 declare module 'class-mongo/MongoUtils' {
@@ -100,9 +109,15 @@ declare module 'class-mongo/decos' {
     export function index(name: string, type: string | number, opts?: IndexOptions): any;
 }
 
+declare module 'class-mongo/mongo/DriverTypes' {
+    import MongoLib = require('mongodb');
+    export type TFindQuery<T = any> = (keyof T) | Partial<T> | ((x: Partial<T>) => MongoLib.QuerySelector<T>);
+}
+
 declare module 'class-mongo/mongo/Driver' {
     import { ICallback } from 'class-mongo/ICallback';
     import MongoLib = require('mongodb');
+    import { TFindQuery } from 'class-mongo/mongo/DriverTypes';
     export type IndexSpecification<T> = string | string[] | Record<keyof T, number>;
     export interface IndexOptions {
         unique?: boolean;
@@ -134,10 +149,15 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_updateMany<T extends {
         _id: any;
     }>(coll: string, array: T[], callback: any): void;
+    export function db_updateManyBy<T extends {
+        _id: any;
+    }>(coll: string, finder: TFindQuery<T>, array: T[], callback: any): void;
+    export function db_upsertManyBy<T extends {
+        _id: any;
+    }>(coll: string, finder: TFindQuery<T>, array: T[], callback: any): void;
     export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
     export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
     export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;
-    export function db_ensureObjectID(value: any): any;
     export function db_getMongo(): typeof MongoLib;
 }
 

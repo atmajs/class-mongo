@@ -20,33 +20,34 @@ export interface IMongoSettings {
 
 export namespace MongoSettings {
     export function define (setts: IMongoSettings) {
-        defineSettings(setts);
+        setts_define(setts);
     }
 }
 
-export function defineSettings (setts: IMongoSettings) {
-    if (setts.ip)
+export function setts_define (setts: IMongoSettings) {
+    if (setts.ip) {
         __ip = setts.ip;
-
-    if (setts.port)
+    }
+    if (setts.port) {
         __port = setts.port;
-
-    if (setts.db)
+    }
+    if (setts.db) {
         __db = setts.db;
-
-    if (setts.params)
+    }
+    if (setts.params) {
         __params = setts.params;
-
+    }
     __connection = setts.connection;
 };
 
 
-export function getConnectionString() {
+export function setts_getConnectionString() {
     if (__connection)
         return __connection;
 
-    if (!__db)
+    if (!__db) {
         return null;
+    }
 
     return 'mongodb://'
         + __ip
@@ -57,6 +58,9 @@ export function getConnectionString() {
         ;
 }
 
-export function getParams () {
+export function setts_getParams () {
     return __params;
+}
+export function setts_getDbName () {
+    return __db;
 }

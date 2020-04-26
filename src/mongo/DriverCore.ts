@@ -1,8 +1,36 @@
 import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback, UpdateWriteOpResult } from 'mongodb'
-import { getConnectionString, getParams } from './Settings';
+import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
 import MongoLib = require('mongodb');
 
-
+export type BulkWriteOp<T> = {
+    insertOne: { document: T }
+} | {
+    updateOne: {
+        filter: FilterQuery<T>,
+        update: UpdateQuery<T> | Partial<T>
+        upsert?: boolean
+    }
+} | {
+    updateMany: {
+        filter: FilterQuery<T>
+        update: UpdateQuery<T> | Partial<T>
+        upsert?: boolean
+    }
+} | {
+    deleteOne: { 
+        filter: FilterQuery<T>
+    } 
+} | {
+    deleteMany: { 
+        filter: FilterQuery<T>
+    }
+} | {
+    replaceOne: { 
+        filter: FilterQuery<T>,
+        replacement: Partial<T>
+        upsert?: boolean
+    }
+};
 
 export namespace core {
     let mongoLib: typeof MongoLib = null;
@@ -49,17 +77,45 @@ export namespace core {
         , query: FilterQuery<T>
         , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<UpdateWriteOpResult>) {
-
         db
             .collection(coll)
             .updateOne(query, data, opt_upsertSingle, callback);
     };
-    export function upsertMany<T = any>(db: MongoLib.Db
+    export function upsertMany<T extends { _id: any } >(db: MongoLib.Db
         , coll: string
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
-        , callback: MongoCallback<WriteOpResult>) {
+        , callback: MongoCallback<MongoLib.BulkWriteResult>) {
 
-        modifyMany(upsertSingle, db, coll, array, callback);
+            let ops = array.map(op => {
+                return {
+                    updateOne: {
+                        filter: op[0],
+                        update: op[1],
+                        upsert: true
+                    }
+                }
+            });
+            bulkWrite(db, coll, ops, (err, result: MongoLib.BulkWriteResult) => {
+                if (err) {
+                    callback(err, null);
+                    return;
+                }
+                /** when updates of existed documents occures there will be no _id field */
+                let upserted = result.getUpsertedIds();
+                for (let i = 0; i < upserted.length; i++) {
+                    let singleResult = upserted[i];
+                    let { index, _id } = singleResult;
+                    
+                    let x: any = array[index][1];
+                    if (x._id == null) {
+                        x._id = _id;
+                    } else if (String(x._id) !== String(upserted[i])) {
+                        callback(<any> new Error(`Unexpected missmatch: ${x._id} != ${upserted[i]}`), null);
+                        return;
+                    }
+                }
+                callback(err, result);
+            });
     };
 
     export function updateSingle<T = any>(db: MongoLib.Db
@@ -77,7 +133,16 @@ export namespace core {
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<WriteOpResult>) {
 
-        modifyMany(updateSingle, db, coll, array, callback);
+        let ops = array.map(op => {
+            return {
+                updateOne: {
+                    filter: op[0],
+                    update: op[1],
+                    upsert: false
+                }
+            }
+        });
+        bulkWrite(db, coll, ops, callback);
     };
 
     export function removeSingle<T = any>(db: MongoLib.Db
@@ -109,6 +174,15 @@ export namespace core {
             .collection(coll)
             .countDocuments(query, options, callback);
     }
+
+        
+    export function bulkWrite <T extends { _id: any }>(db: MongoLib.Db
+        , coll: string
+        , operations: BulkWriteOp<T>[]
+        , callback) {
+
+        db.collection(coll).bulkWrite(operations, callback);
+    };
 }
 
 // ==== private
@@ -154,10 +228,10 @@ namespace Connections {
 
         constructor(public url: string = null, public params: any = null) {
             if (url == null) {
-                this.url = getConnectionString();
+                this.url = setts_getConnectionString();
             }
             if (params == null) {
-                this.params = getParams();
+                this.params = setts_getParams();
             }
         }
 
@@ -179,7 +253,7 @@ namespace Connections {
                     this.connecting = false;
                     this.error = error;
                     this.client = client;
-                    this.db = client.db();
+                    this.db = client?.db(setts_getDbName());
 
                     let arr = this.listeners;
                     for (let i = 0; i < arr.length; i++) {
@@ -202,8 +276,8 @@ namespace Connections {
             connection.connect(callback);
             return;
         }
-        let _url = url ?? getConnectionString();
-        let _params = params ?? getParams();
+        let _url = url ?? setts_getConnectionString();
+        let _params = params ?? setts_getParams();
 
         connection = new Connection(_url, _params);
 

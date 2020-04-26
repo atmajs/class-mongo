@@ -96,16 +96,17 @@ export class User extends MongoEntity<User> {
     - `1.03` [static count](#103-static-count)
     - `1.04` [static upsert](#104-static-upsert)
     - `1.05` [static upsertMany](#105-static-upsertmany)
-    - `1.06` [static patch](#106-static-patch)
-    - `1.07` [static del](#107-static-del)
-    - `1.08` [static delMany](#108-static-delmany)
+    - `1.06` [static upsertManyBy](#105-static-upsertmanyby)
+    - `1.07` [static patch](#106-static-patch)
+    - `1.08` [static del](#107-static-del)
+    - `1.09` [static delMany](#108-static-delmany)
     
-    - `1.09` [static getCollection](#109-getcollection)
-    - `1.10` [static getDb](#110-static-getdb)
+    - `1.10` [static getCollection](#109-getcollection)
+    - `1.11` [static getDb](#110-static-getdb)
 
-    - `1.11` [.upsert](#111-upsert)
-    - `1.12` [.patch](#112-patch)
-    - `1.13` [.del](#113-del)
+    - `1.12` [.upsert](#111-upsert)
+    - `1.13` [.patch](#112-patch)
+    - `1.14` [.del](#113-del)
 
 
 - `2` [namespace MongoSettings](#2-namespace-mongosettings)
@@ -125,4 +126,5 @@ export class User extends MongoEntity<User> {
 
 ----
 
+:copyright: MIT - Atma.js
 

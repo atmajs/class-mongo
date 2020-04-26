@@ -1,10 +1,17 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
-import { FilterQuery, UpdateQuery, Collection, Db } from 'mongodb';
+import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
 import { obj_patchValidate, obj_patch } from './utils/patchObject';
+import { TFindQuery } from './mongo/DriverTypes';
+
+import MongoLib = require('mongodb');
+
+interface FindOptions<T> {
+    projection: { [key in keyof T]?: number | string } 
+}
 
 export class MongoEntity<T = any> extends Serializable<T> {
 
@@ -16,13 +23,13 @@ export class MongoEntity<T = any> extends Serializable<T> {
             if (json == null) {
                 return null;
             }
-            return JsonConvert.fromJson<T>(json, { Type: this });
+            return JsonConvert.fromJSON<T>(json, { Type: this });
         });
     }
-    static async fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?): Promise<InstanceType<T>[]> {
+    static async fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findMany, coll, query, options).then(arr => {
-            return JsonConvert.fromJson<T>(arr, { Type: this });
+            return JsonConvert.fromJSON<T>(arr, { Type: this });
         });
     }
     static async count<T extends typeof MongoEntity>(query?: FilterQuery<T>) {
@@ -34,6 +41,9 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]> {
         return EntityMethods.saveMany(arr);
+    }
+    static async upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
+        return EntityMethods.upsertManyBy(finder, arr);
     }
     static async del<T extends MongoEntity>(x: T): Promise<any> {
         let coll = MongoMeta.getCollection(this);
@@ -80,7 +90,7 @@ export function MongoEntityFor<T>(Base: Constructor<T>) {
 namespace EntityMethods {
     export function save<T extends MongoEntity>(x: T): Promise<T> {
         let coll = MongoMeta.getCollection(x);
-        let json = JsonConvert.toJson(x, { Type: x.constructor as any })
+        let json = JsonConvert.toJSON(x, { Type: x.constructor as any })
         let fn = json._id == null
             ? db_insertSingle
             : db_updateSingle
@@ -112,7 +122,7 @@ namespace EntityMethods {
 
         for (let i = 0; i < arr.length; i++) {
             let x = arr[i];
-            let json = JsonConvert.toJson(x, { Type: Type as any })
+            let json = JsonConvert.toJSON(x, { Type: Type as any })
             if (x._id == null) {
                 insert.push(json);
                 insertIndexes.push(i);
@@ -161,6 +171,25 @@ namespace EntityMethods {
             db_updateMany(coll, update, listener);
         }
         return dfr as any as Promise<T[]>;
+    }
+
+    export async function upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
+        if (arr == null || arr.length === 0) {
+            return Promise.resolve([]);
+        }
+        let Type = arr[0].constructor;
+        let coll = MongoMeta.getCollection(Type);
+        if (coll == null) {
+            return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
+        }
+
+        let result: MongoLib.BulkWriteResult = await cb_toPromise(
+            db_upsertManyBy,
+            coll,
+            finder,
+            arr
+        );
+        return arr;
     }
 
 

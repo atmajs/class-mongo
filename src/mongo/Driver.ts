@@ -3,6 +3,8 @@ import { cb_toPromise } from './utils';
 import { ICallback } from '../ICallback';
 
 import MongoLib = require('mongodb');
+import { TFindQuery } from './DriverTypes';
+import { DriverUtils } from './DriverUtils';
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
 export interface IndexOptions { 
@@ -15,6 +17,7 @@ export interface IndexRaw {
     unique?: boolean
     [ key: string]: any 
 }
+
 
 export { core_profiler_getData as db_profiler_getData } from './DriverProfiler';
 export { core_profiler_toggle as db_profiler_toggle } from './DriverProfiler';
@@ -110,7 +113,7 @@ export function db_updateSingle<T extends { _id: any }>(coll: string, data: T, c
             return callback('<mongo:update> invalid ID');
 
         let query = {
-            _id: db_ensureObjectID(data._id)
+            _id: DriverUtils.ensureObjectID(data._id)
         };
         let $set = data;
         for (let key in data) {
@@ -127,21 +130,45 @@ export function db_updateMany<T extends { _id: any }>(coll: string, array: T[], 
     withDb(callback, db => {
         let batch: [any, any][] = array.map(x => {
             return [
-                { _id: db_ensureObjectID(x._id) },
+                { _id: DriverUtils.ensureObjectID(x._id) },
                 x
             ];
         });
         core.updateMany(db, coll, batch, callback);
     });
-
 };
+
+export function db_updateManyBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, array: T[], callback) {
+    withDb(callback, db => {
+        let batch: [any, any][] = array.map(x => {
+            return [
+                DriverUtils.getFindQuery(finder, x),
+                x
+            ];
+        });
+        core.updateMany(db, coll, batch, callback);
+    });
+};
+
+
+export function db_upsertManyBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, array: T[], callback) {
+    withDb(callback, db => {
+        let batch: [any, any][] = array.map(x => {
+            return [
+                DriverUtils.getFindQuery(finder, x),
+                x
+            ];
+        });
+        core.upsertMany(db, coll, batch, callback);
+    });
+};
+
 
 export function db_patchSingle(coll, id, patch, callback) {
     withDb(callback, db => {
-        var query = { _id: db_ensureObjectID(id) };
+        var query = { _id: DriverUtils.ensureObjectID(id) };
         core.updateSingle(db, coll, query, patch, callback);
     });
-
 };
 
 export function db_remove(coll, query, isSingle, callback) {
@@ -165,15 +192,6 @@ export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callba
 
 };
 
-
-export function db_ensureObjectID(value) {
-    if (typeof value === 'string' && value.length === 24) {
-        let { ObjectID } = core.getMongoLib();
-        return new ObjectID(value);
-    }
-    return value;
-};
-
 export function db_getMongo() {
     return core.getMongoLib();
 };
@@ -187,7 +205,7 @@ var queryToMongo = function (query) {
 
 
     if (query.hasOwnProperty('_id'))
-        query._id = db_ensureObjectID(query._id);
+        query._id = DriverUtils.ensureObjectID(query._id);
 
     var comparer = {
         62: {
