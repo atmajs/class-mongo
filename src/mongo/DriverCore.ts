@@ -1,5 +1,7 @@
 import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback, UpdateWriteOpResult } from 'mongodb'
 import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
+import { IAggrExpression, IAggrPipeline } from './DriverTypes';
+
 import MongoLib = require('mongodb');
 
 export type BulkWriteOp<T> = {
@@ -69,6 +71,17 @@ export namespace core {
 
         let c = db.collection(coll);
         let cursor = c.find(query, options);
+        cursor.toArray(callback);
+    };
+
+    export function aggregate<T = any[]>(db: MongoLib.Db
+        , coll: string
+        , pipeline: IAggrPipeline[]
+        , options: MongoLib.CollectionAggregationOptions
+        , callback: MongoCallback<T[]> /*<error, array>*/) {
+
+        let c = db.collection(coll);
+        let cursor = c.aggregate(pipeline, options);
         cursor.toArray(callback);
     };
 

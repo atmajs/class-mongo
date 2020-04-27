@@ -1,16 +1,16 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
 import { obj_patchValidate, obj_patch } from './utils/patchObject';
-import { TFindQuery } from './mongo/DriverTypes';
+import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
 
 import MongoLib = require('mongodb');
 
 interface FindOptions<T> {
-    projection: { [key in keyof T]?: number | string } 
+    projection?: { [key in keyof T]?: number | string } 
 }
 
 export class MongoEntity<T = any> extends Serializable<T> {
@@ -32,6 +32,17 @@ export class MongoEntity<T = any> extends Serializable<T> {
             return JsonConvert.fromJSON<T>(arr, { Type: this });
         });
     }
+    static async aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T
+        , pipeline?: IAggrPipeline[]
+        , options?: {Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+    ): Promise<TOut[]> {
+        let coll = MongoMeta.getCollection(this);
+        return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
+            return JsonConvert.fromJSON<T>(arr, { Type: options?.Type });
+        });
+    }
+    
+
     static async count<T extends typeof MongoEntity>(query?: FilterQuery<T>) {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_count, coll, query, null);

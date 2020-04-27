@@ -3,7 +3,7 @@ import { cb_toPromise } from './utils';
 import { ICallback } from '../ICallback';
 
 import MongoLib = require('mongodb');
-import { TFindQuery } from './DriverTypes';
+import { TFindQuery, IAggrExpression, IAggrPipeline } from './DriverTypes';
 import { DriverUtils } from './DriverUtils';
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
@@ -67,12 +67,27 @@ export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery
     });
 };
 
-export function db_findMany<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>) {
+export function db_findMany<T = any>(coll: string
+    , query: MongoLib.FilterQuery<T>
+    , options: MongoLib.FindOneOptions
+    , callback: ICallback<T[]>) {
+
     withDb(callback, db => {
         core.findMany(db, coll, queryToMongo(query), options ?? {}, callback);
     });
-
 };
+
+export function db_aggregate<T = any>(coll: string
+    , pipeline: IAggrPipeline[]
+    , options: MongoLib.CollectionAggregationOptions
+    , callback: ICallback<T[]>) {
+        
+    withDb(callback, db => {
+        core.aggregate(db, coll, pipeline, options ?? {}, callback);
+    });
+};
+
+
 
 export function db_count<T = any>(
     coll: string
