@@ -28,7 +28,7 @@ UTest({
 
         let fooSaved = new FooDb({ letter: 'a' });
         await fooSaved.upsert();
-
+        
 
         let id = String(fooSaved._id);
         gt_(id.length, 10);

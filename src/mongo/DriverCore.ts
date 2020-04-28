@@ -3,36 +3,37 @@ import { setts_getConnectionString, setts_getParams, setts_getDbName } from './S
 import { IAggrExpression, IAggrPipeline } from './DriverTypes';
 
 import MongoLib = require('mongodb');
+import { obj_partialToUpdateQuery } from '../utils/patchObject';
 
-export type BulkWriteOp<T> = {
-    insertOne: { document: T }
-} | {
-    updateOne: {
-        filter: FilterQuery<T>,
-        update: UpdateQuery<T> | Partial<T>
-        upsert?: boolean
-    }
-} | {
-    updateMany: {
-        filter: FilterQuery<T>
-        update: UpdateQuery<T> | Partial<T>
-        upsert?: boolean
-    }
-} | {
-    deleteOne: { 
-        filter: FilterQuery<T>
-    } 
-} | {
-    deleteMany: { 
-        filter: FilterQuery<T>
-    }
-} | {
-    replaceOne: { 
-        filter: FilterQuery<T>,
-        replacement: Partial<T>
-        upsert?: boolean
-    }
-};
+// export type BulkWriteOp<T> = {
+//     insertOne: { document: T }
+// } | {
+//     updateOne: {
+//         filter: FilterQuery<T>,
+//         update: UpdateQuery<T> | Partial<T>
+//         upsert?: boolean
+//     }
+// } | {
+//     updateMany: {
+//         filter: FilterQuery<T>
+//         update: UpdateQuery<T> | Partial<T>
+//         upsert?: boolean
+//     }
+// } | {
+//     deleteOne: { 
+//         filter: FilterQuery<T>
+//     } 
+// } | {
+//     deleteMany: { 
+//         filter: FilterQuery<T>
+//     }
+// } | {
+//     replaceOne: { 
+//         filter: FilterQuery<T>,
+//         replacement: Partial<T>
+//         upsert?: boolean
+//     }
+// };
 
 export namespace core {
     let mongoLib: typeof MongoLib = null;
@@ -103,7 +104,7 @@ export namespace core {
                 return {
                     updateOne: {
                         filter: op[0],
-                        update: op[1],
+                        update: obj_partialToUpdateQuery<any>(op[1]),
                         upsert: true
                     }
                 }
@@ -191,7 +192,7 @@ export namespace core {
         
     export function bulkWrite <T extends { _id: any }>(db: MongoLib.Db
         , coll: string
-        , operations: BulkWriteOp<T>[]
+        , operations: MongoLib.BulkWriteOperation<T>[]
         , callback) {
 
         db.collection(coll).bulkWrite(operations, callback);

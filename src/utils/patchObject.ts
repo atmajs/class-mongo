@@ -1,6 +1,8 @@
 import { obj_getProperty, obj_setProperty, is_Array } from 'atma-utils';
 import { arr_remove } from './array';
 
+import MongoLib = require('mongodb');
+
 export function obj_patch(obj, patch) {
 
     for (var key in patch) {
@@ -13,6 +15,23 @@ export function obj_patch(obj, patch) {
     }
     return obj;
 };
+
+export function obj_partialToUpdateQuery<T = any>(data: Partial<T>): MongoLib.UpdateQuery<T> {
+    if ((data as any)._id == null) {
+        return data;
+    }
+    if (obj_isPatch(data)) {
+        return data;
+    }
+    let $set:any = {};
+    for (let key in data) {
+        if (key === '_id') {
+            continue;
+        }
+        $set[key] = data[key];
+    }
+    return { $set };
+}
 
 export function obj_patchValidate(patch) {
     if (patch == null)
@@ -29,6 +48,19 @@ export function obj_patchValidate(patch) {
         return 'No data';
 
     return null;
+};
+
+
+export function obj_isPatch(patch) {
+    if (patch == null) {
+        return false;
+    }
+    for (var key in patches) {
+        if (key in patch) {
+            return true;
+        }
+    }
+    return false;
 };
 
 // === private

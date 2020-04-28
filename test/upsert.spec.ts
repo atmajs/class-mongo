@@ -62,5 +62,28 @@ UTest({
         let foo1 = await User.fetch({ email: 'foo@foo.fake'});
         deepEq_(foo1.name, 'Foo1');
         notEq_(foo1._id, null);
+    },
+    async 'update multiple' () {
+        let users = await User.fetchMany();
+        eq_(users.length, 2);
+        users[0].name = 'Foo2';
+        users[1].name = 'Bar2';
+
+        await User.upsertMany(users);
+
+        users = await User.fetchMany();
+        eq_(users.length, 2);
+        eq_(users[0].name, 'Foo2');
+        eq_(users[1].name, 'Bar2');
+
+
+        let update = [
+            new User({ name: 'Foo3', email: 'foo@foo.fake' }),
+            new User({ name: 'Bar3', email: 'bar@bar.fake' }),
+        ];
+        await User.upsertManyBy('email', update);
+        let foo1 = await User.fetch({ email: 'foo@foo.fake'});
+        deepEq_(foo1.name, 'Foo3');
+        notEq_(foo1._id, null);
     }
 })

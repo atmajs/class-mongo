@@ -5,6 +5,7 @@ import { ICallback } from '../ICallback';
 import MongoLib = require('mongodb');
 import { TFindQuery, IAggrExpression, IAggrPipeline } from './DriverTypes';
 import { DriverUtils } from './DriverUtils';
+import { obj_partialToUpdateQuery } from '../utils/patchObject';
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
 export interface IndexOptions { 
@@ -130,14 +131,8 @@ export function db_updateSingle<T extends { _id: any }>(coll: string, data: T, c
         let query = {
             _id: DriverUtils.ensureObjectID(data._id)
         };
-        let $set = data;
-        for (let key in data) {
-            if (key === '_id') {
-                continue;
-            }
-            $set[key] = data[key];
-        }
-        core.updateSingle(db, coll, query, { $set }, callback);
+        let patch = obj_partialToUpdateQuery(data);
+        core.updateSingle(db, coll, query, patch, callback);
     });
 };
 

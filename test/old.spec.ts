@@ -8,10 +8,10 @@ import { Json } from 'class-json';
 
 @table('users')
 class User extends MongoEntity {
-    @Json.value('')
+    @Json.defaultValue('')
     username: string
 
-    @Json.value(0)
+    @Json.defaultValue(0)
     timestamp: number
 }
 
