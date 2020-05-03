@@ -172,6 +172,16 @@ export function db_upsertManyBy<T extends { _id: any }>(coll: string, finder: TF
         core.upsertMany(db, coll, batch, callback);
     });
 };
+export function db_upsertSingleBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, x: T, callback) {
+    withDb(callback, db => {
+        core.upsertSingle(db, 
+            coll 
+            , DriverUtils.getFindQuery(finder, x)
+            , x
+            , callback
+        );
+    });
+};
 
 
 export function db_patchSingle(coll, id, patch, callback) {

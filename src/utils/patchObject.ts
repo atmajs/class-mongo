@@ -16,10 +16,7 @@ export function obj_patch(obj, patch) {
     return obj;
 };
 
-export function obj_partialToUpdateQuery<T = any>(data: Partial<T>): MongoLib.UpdateQuery<T> {
-    if ((data as any)._id == null) {
-        return data;
-    }
+export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> | Partial<T>): MongoLib.UpdateQuery<T> {
     if (obj_isPatch(data)) {
         return data;
     }

@@ -1,5 +1,5 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
@@ -49,6 +49,9 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async upsert<T extends MongoEntity>(instance: T): Promise<T> {
         return EntityMethods.save(instance);
+    }
+    static async upsertBy<T extends MongoEntity>(finder: TFindQuery<T>, instance: T): Promise<T> {
+        return EntityMethods.saveBy(finder, instance, this);
     }
     static async upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]> {
         return EntityMethods.saveMany(arr);
@@ -118,6 +121,24 @@ namespace EntityMethods {
             }
             return x;
         });
+    }
+    export async function saveBy<T extends MongoEntity>(finder: TFindQuery<T>, x: Partial<T>, Type?): Promise<T> {
+        Type = Type ?? x.constructor;
+        let coll = MongoMeta.getCollection(Type);
+        if (coll == null) {
+            return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
+        }
+
+        let result: MongoLib.UpdateWriteOpResult = await cb_toPromise(
+            db_upsertSingleBy,
+            coll,
+            finder,
+            x
+        );
+        if (result.upsertedId?._id && x._id == null) {
+            (x as any)._id = result.upsertedId._id;
+        }
+        return x as any;
     }
 
     export function saveMany<T extends MongoEntity>(arr: T[]): Promise<T[]> {

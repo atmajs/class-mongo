@@ -34,6 +34,7 @@ declare module 'class-mongo/MongoEntity' {
             } & MongoLib.CollectionAggregationOptions): Promise<TOut[]>;
             static count<T extends typeof MongoEntity>(query?: FilterQuery<T>): Promise<any>;
             static upsert<T extends MongoEntity>(instance: T): Promise<T>;
+            static upsertBy<T extends MongoEntity>(finder: TFindQuery<T>, instance: T): Promise<T>;
             static upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]>;
             static upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]>;
             static del<T extends MongoEntity>(x: T): Promise<any>;
@@ -405,6 +406,9 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_upsertManyBy<T extends {
         _id: any;
     }>(coll: string, finder: TFindQuery<T>, array: T[], callback: any): void;
+    export function db_upsertSingleBy<T extends {
+        _id: any;
+    }>(coll: string, finder: TFindQuery<T>, x: T, callback: any): void;
     export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
     export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
     export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;

@@ -80,10 +80,26 @@ UTest({
         let update = [
             new User({ name: 'Foo3', email: 'foo@foo.fake' }),
             new User({ name: 'Bar3', email: 'bar@bar.fake' }),
+            new User({ name: 'Qux3', email: 'qux@qux.fake' }),
         ];
         await User.upsertManyBy('email', update);
         let foo1 = await User.fetch({ email: 'foo@foo.fake'});
         deepEq_(foo1.name, 'Foo3');
         notEq_(foo1._id, null);
+
+        let qux1 = await User.fetch({ email: 'qux@qux.fake'});
+        deepEq_(qux1.name, 'Qux3');
+        notEq_(qux1._id, null);
+
+
+        let qux2 = await User.upsertBy('email', new User({ email: 'qux@qux.fake', name: 'Qux4' }));
+        
+        let qux4 = await User.fetch({ email: 'qux@qux.fake'});
+        deepEq_(qux4.name, 'Qux4');
+        eq_(String(qux1._id), String(qux4._id));
+
+
+        await User.upsertBy('email', new User({ email: 'dux@dux.fake', name: 'Dux1' }));
+
     }
 })

@@ -91,9 +91,12 @@ export namespace core {
         , query: FilterQuery<T>
         , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<UpdateWriteOpResult>) {
+
+        let update = obj_partialToUpdateQuery(data);
+        
         db
             .collection(coll)
-            .updateOne(query, data, opt_upsertSingle, callback);
+            .updateOne(query, update, opt_upsertSingle, callback);
     };
     export function upsertMany<T extends { _id: any } >(db: MongoLib.Db
         , coll: string
