@@ -39,7 +39,8 @@ declare module 'class-mongo/MongoEntity' {
             static upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]>;
             static del<T extends MongoEntity>(x: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
-            static patch<T extends MongoEntity>(instance: T, patch: any): Promise<T>;
+            static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
+            static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static getCollection(): Promise<Collection>;
             static getDb(): Promise<Db>;
             upsert(): Promise<this>;
@@ -410,6 +411,7 @@ declare module 'class-mongo/mongo/Driver' {
         _id: any;
     }>(coll: string, finder: TFindQuery<T>, x: T, callback: any): void;
     export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
+    export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
     export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
     export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;
     export function db_getMongo(): typeof MongoLib;

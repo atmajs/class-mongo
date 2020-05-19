@@ -20,15 +20,15 @@ import { obj_partialToUpdateQuery } from '../utils/patchObject';
 //         upsert?: boolean
 //     }
 // } | {
-//     deleteOne: { 
-//         filter: FilterQuery<T>
-//     } 
-// } | {
-//     deleteMany: { 
+//     deleteOne: {
 //         filter: FilterQuery<T>
 //     }
 // } | {
-//     replaceOne: { 
+//     deleteMany: {
+//         filter: FilterQuery<T>
+//     }
+// } | {
+//     replaceOne: {
 //         filter: FilterQuery<T>,
 //         replacement: Partial<T>
 //         upsert?: boolean
@@ -37,7 +37,7 @@ import { obj_partialToUpdateQuery } from '../utils/patchObject';
 
 export namespace core {
     let mongoLib: typeof MongoLib = null;
-    
+
     export function getDb() {
         return Connections.getDb();
     };
@@ -93,7 +93,7 @@ export namespace core {
         , callback: MongoCallback<UpdateWriteOpResult>) {
 
         let update = obj_partialToUpdateQuery(data);
-        
+
         db
             .collection(coll)
             .updateOne(query, update, opt_upsertSingle, callback);
@@ -122,7 +122,7 @@ export namespace core {
                 for (let i = 0; i < upserted.length; i++) {
                     let singleResult = upserted[i];
                     let { index, _id } = singleResult;
-                    
+
                     let x: any = array[index][1];
                     if (x._id == null) {
                         x._id = _id;
@@ -138,12 +138,13 @@ export namespace core {
     export function updateSingle<T = any>(db: MongoLib.Db
         , coll: string
         , query: FilterQuery<T>
-        , mod: UpdateQuery<T> | Partial<T>
+        , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
 
+        let update = obj_partialToUpdateQuery(data);
         db
             .collection(coll)
-            .updateOne(query, mod, {upsert: true}, callback);
+            .updateOne(query, update, opt_updateSingle, callback);
     };
     export function updateMany<T = any>(db: MongoLib.Db
         , coll: string
@@ -192,7 +193,7 @@ export namespace core {
             .countDocuments(query, options, callback);
     }
 
-        
+
     export function bulkWrite <T extends { _id: any }>(db: MongoLib.Db
         , coll: string
         , operations: MongoLib.BulkWriteOperation<T>[]
@@ -204,8 +205,12 @@ export namespace core {
 
 // ==== private
 
-var opt_upsertSingle = {
+const opt_upsertSingle = {
     upsert: true,
+    multi: false,
+};
+const opt_updateSingle = {
+    upsert: false,
     multi: false,
 };
 function modifyMany(modifier: Function, db, coll, array /*[[query, data]]*/, callback) {

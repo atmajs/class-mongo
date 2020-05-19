@@ -33,7 +33,7 @@ export interface IQueryInfo {
 export interface IProfilerSettings {
     slow?: number
     onDetect?: (info: IQueryInfo) => void
-    detector?: (plan, coll, query) => boolean 
+    detector?: (plan, coll, query) => boolean
 }
 
 export function core_profiler_getData() {
@@ -69,7 +69,7 @@ export function core_profiler_toggle(enable, settings) {
     core.findSingle = function (db, coll, query, options, callback /*<error, item>*/) {
         _core_findSingle.apply(null, arguments);
         _core_findSingle(
-            db 
+            db
             , coll
             , query
             , wrapOptions(options)
@@ -78,7 +78,7 @@ export function core_profiler_toggle(enable, settings) {
     core.findMany = function (db, coll, query, options, callback /*<error, array>*/) {
         _core_findMany.apply(null, arguments);
         _core_findMany(
-            db 
+            db
             , coll
             , wrapQuery(query)
             , options
@@ -196,7 +196,7 @@ function analize(coll, query, plan, params: { isArray?: boolean, isClause?: bool
         add('slow', coll, query, plan, params);
         return;
     }
-    
+
     if (plan.queryPlanner.indexFilterSet === false) {
         add('unindexed', coll, query, plan, params);
         return;

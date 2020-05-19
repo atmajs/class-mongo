@@ -1,16 +1,16 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
-import { obj_patchValidate, obj_patch } from './utils/patchObject';
+import { obj_patchValidate, obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
 import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
 
 import MongoLib = require('mongodb');
 
 interface FindOptions<T> {
-    projection?: { [key in keyof T]?: number | string } 
+    projection?: { [key in keyof T]?: number | string }
 }
 
 export class MongoEntity<T = any> extends Serializable<T> {
@@ -41,7 +41,6 @@ export class MongoEntity<T = any> extends Serializable<T> {
             return JsonConvert.fromJSON<T>(arr, { Type: options?.Type });
         });
     }
-    
 
     static async count<T extends typeof MongoEntity>(query?: FilterQuery<T>) {
         let coll = MongoMeta.getCollection(this);
@@ -67,8 +66,13 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.delMany(coll, arr);
     }
-    static async patch<T extends MongoEntity>(instance: T, patch): Promise<T> {
-        return EntityMethods.patch(instance, patch);
+    static async patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patch(coll, instance, patch);
+    }
+    static async patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patchBy(coll, finder, patch);
     }
     static async getCollection(): Promise<Collection> {
         let coll = MongoMeta.getCollection(this);
@@ -85,7 +89,8 @@ export class MongoEntity<T = any> extends Serializable<T> {
         return EntityMethods.del(coll, this);
     }
     patch <T extends MongoEntity> (this: T, patch: UpdateQuery<T>): Promise<T> {
-        return EntityMethods.patch(this, patch);
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patch(coll, this, patch);
     }
 }
 
@@ -224,32 +229,29 @@ namespace EntityMethods {
         return arr;
     }
 
-
-    export function patch<T extends MongoEntity>(x: T, patch: UpdateQuery<T>): Promise<T> {
-
-        let coll = MongoMeta.getCollection(x);
+    export function patchBy<T extends MongoEntity>(coll: string, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+        return cb_toPromise(
+            db_patchSingleBy,
+            coll,
+            finder,
+            patch
+        );
+    }
+    export function patch<T extends MongoEntity>(coll: string, x: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
         let id = x._id;
-
         if (id == null) {
-            return Promise.reject(new Error(`<class:patch> 'id' is not defined for ${coll}`));
+            return Promise.reject(new Error(`<patch> 'id' is not defined for ${coll}`));
         }
-        if (coll == null) {
-            return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${id}`));
-        }
-
-        let error = obj_patchValidate(patch);
-        if (error != null) {
-            return Promise.reject(new Error(error));
-        }
-
-        obj_patch(this, patch);
+        let update = obj_partialToUpdateQuery(patch);
+        obj_patch(this, update);
         return cb_toPromise(
             db_patchSingle,
             coll,
             id,
-            patch
+            update
         ).then(_ => x);
     }
+
 
     export function del(coll: string, x: { _id: string | Object }) {
         if (coll == null) {
@@ -274,7 +276,7 @@ namespace EntityMethods {
                 ids.push(x._id);
             }
         }
-        
+
         return cb_toPromise(db_remove, coll, { _id: { $in: ids } }, false).then(x => {
             return x.result;
         });

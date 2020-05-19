@@ -8,15 +8,15 @@ import { DriverUtils } from './DriverUtils';
 import { obj_partialToUpdateQuery } from '../utils/patchObject';
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
-export interface IndexOptions { 
-    unique?: boolean 
-    [ key: string]: any 
+export interface IndexOptions {
+    unique?: boolean
+    [ key: string]: any
 }
-export interface IndexRaw { 
+export interface IndexRaw {
     key: { [property: string]: string | number }
     name?: string
     unique?: boolean
-    [ key: string]: any 
+    [ key: string]: any
 }
 
 
@@ -82,7 +82,7 @@ export function db_aggregate<T = any>(coll: string
     , pipeline: IAggrPipeline[]
     , options: MongoLib.CollectionAggregationOptions
     , callback: ICallback<T[]>) {
-        
+
     withDb(callback, db => {
         core.aggregate(db, coll, pipeline, options ?? {}, callback);
     });
@@ -174,8 +174,8 @@ export function db_upsertManyBy<T extends { _id: any }>(coll: string, finder: TF
 };
 export function db_upsertSingleBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, x: T, callback) {
     withDb(callback, db => {
-        core.upsertSingle(db, 
-            coll 
+        core.upsertSingle(db,
+            coll
             , DriverUtils.getFindQuery(finder, x)
             , x
             , callback
@@ -186,7 +186,12 @@ export function db_upsertSingleBy<T extends { _id: any }>(coll: string, finder: 
 
 export function db_patchSingle(coll, id, patch, callback) {
     withDb(callback, db => {
-        var query = { _id: DriverUtils.ensureObjectID(id) };
+        let query = { _id: DriverUtils.ensureObjectID(id) };
+        core.updateSingle(db, coll, query, patch, callback);
+    });
+};
+export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
+    withDb(callback, db => {
         core.updateSingle(db, coll, query, patch, callback);
     });
 };
