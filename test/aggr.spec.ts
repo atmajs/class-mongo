@@ -6,7 +6,7 @@ import { Json, Serializable } from 'class-json';
 
 @table('test-aggr-users')
 class User extends MongoEntity<User> {
-    
+
     @index({ unique: true })
     email: string
 
@@ -40,10 +40,10 @@ UTest({
         notEq_(result[0]._id, null);
 
        let arr = await User.aggregateMany([
-            { 
-                $addFields: { 
-                    tags_count: { $size: "$tags" } 
-                } 
+            {
+                $addFields: {
+                    tags_count: { $size: "$tags" }
+                }
             }
        ]);
        eq_(arr.length, 2);
@@ -79,5 +79,16 @@ UTest({
         ]);
 
         deepEq_(out, [{ "_id" : null, "count" : 5 }]);
+
+
+        let paged = await Doc.aggregateManyPaged([
+            { $match: { score: { $gte: 60 } }},
+            { $sort: { score: 1 }},
+            { $skip: 3},
+            { $limit: 2 }
+        ]);
+        eq_(paged.total, docs.filter(x => x.score >= 60).length);
+        eq_(paged.collection.length, 2);
+        has_(paged.collection[0], { views: 521, score: 85 });
     }
 })

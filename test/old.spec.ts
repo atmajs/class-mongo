@@ -71,7 +71,7 @@ UTest({
         eq_(x.username, 'foo');
     },
     async 'find-gt'() {
-        let x = await User.fetch({ timestamp: `>${timestamp - 20}` });  
+        let x = await User.fetch({ timestamp: `>${timestamp - 20}` });
         is_(x._id, 'Object');
         eq_(x.username, 'foo');
     },
@@ -113,6 +113,20 @@ UTest({
         users = await User.fetchMany({ timestamp: '>=150' });
         eq_(users.length, 150);
         is_(users[0]._id, 'Object');
+
+        let paged = await User.fetchManyPaged({
+            timestamp: {
+                $gte: 150
+            }
+        }, {
+            limit: 2,
+            sort: {
+                timestamp: 1
+            }
+        });
+        eq_(paged.total, 150);
+        eq_(paged.collection.length, 2);
+        eq_(paged.collection[0].timestamp, 150);
     },
 
     async 'indexes' (done) {
@@ -125,12 +139,12 @@ UTest({
             @index()
             timestamp = 0
         }
-        
+
         await MongoIndexes.ensureAll();
 
         let coll = await User.getCollection();
         let info = await coll.indexInformation();
-        has_(info, 
+        has_(info,
             {
                 _id_: [
                   [
@@ -151,7 +165,7 @@ UTest({
     async 'direct collection patching' () {
         let user = new User({ timestamp: 5 });
         await user.upsert();
-            
+
         let coll = await User.getCollection();
 
         let x = await coll.updateOne({
@@ -168,14 +182,14 @@ UTest({
 
         MongoProfiler.toggle(true, {
                 onDetect: assert.await(function (info) {
-                    
+
                     has_(info, {
                         params: {
                             reason: 'unindexed'
                         },
                         coll: 'users',
                         plan: {
-                            
+
                         }
                     });
 

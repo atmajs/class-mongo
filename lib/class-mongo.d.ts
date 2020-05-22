@@ -29,9 +29,19 @@ declare module 'class-mongo/MongoEntity' {
             _id: string;
             static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>): Promise<InstanceType<T>>;
             static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
+            static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
+                    collection: InstanceType<T>[];
+                    total: number;
+            }>;
             static aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
                     Type?: Constructor<TOut>;
             } & MongoLib.CollectionAggregationOptions): Promise<TOut[]>;
+            static aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
+                    Type?: Constructor<TOut>;
+            } & MongoLib.CollectionAggregationOptions): Promise<{
+                    collection: TOut[];
+                    total: number;
+            }>;
             static count<T extends typeof MongoEntity>(query?: FilterQuery<T>): Promise<any>;
             static upsert<T extends MongoEntity>(instance: T): Promise<T>;
             static upsertBy<T extends MongoEntity>(finder: TFindQuery<T>, instance: T): Promise<T>;
@@ -390,6 +400,10 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_resolveDb(): Promise<any>;
     export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery<T>, callback: ICallback<T>): void;
     export function db_findMany<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>): void;
+    export function db_findManyPaged<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<{
+        collection: T[];
+        total: number;
+    }>): void;
     export function db_aggregate<T = any>(coll: string, pipeline: IAggrPipeline[], options: MongoLib.CollectionAggregationOptions, callback: ICallback<T[]>): void;
     export function db_count<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.MongoCountPreferences, callback: ICallback<number>): void;
     export function db_insert(coll: any, data: any, callback: any): void;

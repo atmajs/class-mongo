@@ -74,6 +74,32 @@ export namespace core {
         let cursor = c.find(query, options);
         cursor.toArray(callback);
     };
+    export function findManyPaged<T = any[]>(db: MongoLib.Db
+        , coll: string
+        , query: FilterQuery<T>
+        , options: FindOneOptions
+        , callback: MongoCallback<{ collection: T[], total: number }>) {
+
+        let c = db.collection(coll);
+        let cursor = c.find(query, options);
+        cursor.count(false, (error, total) => {
+            if (error) {
+                callback(error, null);
+                return;
+            }
+            cursor.toArray((error, arr) => {
+                if (error) {
+                    callback(error, null);
+                    return;
+                }
+                callback(null, {
+                    collection: arr,
+                    total
+                })
+            });
+        })
+
+    };
 
     export function aggregate<T = any[]>(db: MongoLib.Db
         , coll: string

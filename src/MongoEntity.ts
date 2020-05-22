@@ -1,5 +1,5 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy, db_findManyPaged } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
@@ -32,6 +32,18 @@ export class MongoEntity<T = any> extends Serializable<T> {
             return JsonConvert.fromJSON<T>(arr, { Type: this });
         });
     }
+    static async fetchManyPaged<T extends typeof MongoEntity>(this: T
+        , query?: FilterQuery<T>
+        , options?: FindOptions<InstanceType<T>> & FindOneOptions
+    ): Promise<{ collection: InstanceType<T>[], total: number }> {
+        let coll = MongoMeta.getCollection(this);
+        return cb_toPromise(db_findManyPaged, coll, query, options).then(result => {
+            return {
+                collection: JsonConvert.fromJSON<T>(result.collection, { Type: this }),
+                total: result.total
+            };
+        });
+    }
     static async aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T
         , pipeline?: IAggrPipeline[]
         , options?: {Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
@@ -39,6 +51,35 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
             return JsonConvert.fromJSON<T>(arr, { Type: options?.Type });
+        });
+    }
+    static async aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T
+        , pipeline?: IAggrPipeline[]
+        , options?: {Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+    ): Promise<{ collection: TOut[], total: number }> {
+        let coll = MongoMeta.getCollection(this);
+        let countPipeline = [];
+        for (let i = 0; i < pipeline.length; i++) {
+            let x = pipeline[i];
+            if ('$sort' in x || '$skip' in x || '$limit' in x) {
+                continue;
+            }
+            countPipeline.push(x);
+        }
+        countPipeline.push( { $count: 'count' });
+
+        let $facet = {
+            $facet: {
+                collection: pipeline,
+                total: countPipeline
+            }
+        };
+        return cb_toPromise(db_aggregate, coll, $facet, options).then(resArr => {
+            let doc = resArr[0];
+            return {
+                collection: JsonConvert.fromJSON<T>(doc.collection, { Type: options?.Type }),
+                total: doc.total[0].count
+            };
         });
     }
 

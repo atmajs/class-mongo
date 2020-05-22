@@ -78,6 +78,16 @@ export function db_findMany<T = any>(coll: string
     });
 };
 
+export function db_findManyPaged<T = any>(coll: string
+    , query: MongoLib.FilterQuery<T>
+    , options: MongoLib.FindOneOptions
+    , callback: ICallback<{collection: T[], total: number}>) {
+
+    withDb(callback, db => {
+        core.findManyPaged(db, coll, queryToMongo(query), options ?? {}, callback);
+    });
+};
+
 export function db_aggregate<T = any>(coll: string
     , pipeline: IAggrPipeline[]
     , options: MongoLib.CollectionAggregationOptions
