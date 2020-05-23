@@ -78,7 +78,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
             let doc = resArr[0];
             return {
                 collection: JsonConvert.fromJSON<T>(doc.collection, { Type: options?.Type }),
-                total: doc.total[0].count
+                total: doc.total[0]?.count ?? 0
             };
         });
     }
