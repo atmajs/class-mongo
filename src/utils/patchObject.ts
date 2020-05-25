@@ -25,7 +25,12 @@ export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> 
         if (key === '_id') {
             continue;
         }
-        $set[key] = data[key];
+        let val = data[key];
+        if (typeof val === 'function') {
+            // skip any methods
+            continue;
+        }
+        $set[key] = val;
     }
     return { $set };
 }
