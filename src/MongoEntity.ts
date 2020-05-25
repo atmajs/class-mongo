@@ -23,13 +23,13 @@ export class MongoEntity<T = any> extends Serializable<T> {
             if (json == null) {
                 return null;
             }
-            return JsonConvert.fromJSON<T>(json, { Type: this });
+            return JsonConvert.fromJSON<InstanceType<T>>(json, { Type: this });
         });
     }
     static async fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findMany, coll, query, options).then(arr => {
-            return JsonConvert.fromJSON<T>(arr, { Type: this });
+            return JsonConvert.fromJSON<InstanceType<T>[]>(arr, { Type: this });
         });
     }
     static async fetchManyPaged<T extends typeof MongoEntity>(this: T
@@ -39,7 +39,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findManyPaged, coll, query, options).then(result => {
             return {
-                collection: JsonConvert.fromJSON<T>(result.collection, { Type: this }),
+                collection: JsonConvert.fromJSON<InstanceType<T>[]>(result.collection, { Type: this }),
                 total: result.total
             };
         });
@@ -50,7 +50,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
     ): Promise<TOut[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
-            return JsonConvert.fromJSON<T>(arr, { Type: options?.Type });
+            return JsonConvert.fromJSON<TOut[]>(arr, { Type: options?.Type });
         });
     }
     static async aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T
@@ -77,7 +77,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         return cb_toPromise(db_aggregate, coll, $facet, options).then(resArr => {
             let doc = resArr[0];
             return {
-                collection: JsonConvert.fromJSON<T>(doc.collection, { Type: options?.Type }),
+                collection: JsonConvert.fromJSON<TOut[]>(doc.collection, { Type: options?.Type }),
                 total: doc.total[0]?.count ?? 0
             };
         });
