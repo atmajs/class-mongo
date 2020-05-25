@@ -205,6 +205,11 @@ export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>
         core.updateSingle(db, coll, query, patch, callback);
     });
 };
+export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback) {
+    withDb(callback, db => {
+        core.patchMany(db, coll, arr, callback);
+    });
+}
 
 export function db_remove(coll, query, isSingle, callback) {
     withDb(callback, db => {

@@ -58,5 +58,17 @@ UTest({
         '> bar unchaged'
         let bar2 = await User.fetch({ _id: bar._id });
         eq_(bar2.email, bar.email);
+
+        '> patch many'
+        await User.patchMany([
+            [ {_id: foo._id}, { name: 'FooMany' } ],
+            [ {_id: bar._id}, { name: 'BarMany' } ],
+        ]);
+
+        let _foo3 = await User.fetch({ _id: foo._id });
+        let _bar3 = await User.fetch({ _id: bar._id });
+        eq_(_foo3.name, 'FooMany');
+        eq_(_bar3.name, 'BarMany');
+
     }
 })

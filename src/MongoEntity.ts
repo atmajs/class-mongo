@@ -1,5 +1,5 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy, db_findManyPaged } from './mongo/Driver';
+import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy, db_findManyPaged, db_patchMany } from './mongo/Driver';
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
@@ -110,6 +110,10 @@ export class MongoEntity<T = any> extends Serializable<T> {
     static async patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patch(coll, instance, patch);
+    }
+    static async patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patchMany(coll, arr);
     }
     static async patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
         let coll = MongoMeta.getCollection(this);
@@ -291,6 +295,13 @@ namespace EntityMethods {
             id,
             update
         ).then(_ => x);
+    }
+    export function patchMany<T extends MongoEntity>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]) {
+        return cb_toPromise(
+            db_patchMany,
+            coll,
+            arr
+        );
     }
 
 

@@ -160,6 +160,28 @@ export namespace core {
                 callback(err, result);
             });
     };
+    export function patchMany<T extends { _id: any } >(db: MongoLib.Db
+        , coll: string
+        , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
+        , callback: MongoCallback<MongoLib.BulkWriteResult>) {
+
+            let ops = array.map(op => {
+                return {
+                    updateOne: {
+                        filter: op[0],
+                        update: obj_partialToUpdateQuery<any>(op[1]),
+                        upsert: false
+                    }
+                }
+            });
+            bulkWrite(db, coll, ops, (err, result: MongoLib.BulkWriteResult) => {
+                if (err) {
+                    callback(err, null);
+                    return;
+                }
+                callback(null, result);
+            });
+    };
 
     export function updateSingle<T = any>(db: MongoLib.Db
         , coll: string

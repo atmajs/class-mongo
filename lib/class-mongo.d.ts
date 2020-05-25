@@ -50,6 +50,7 @@ declare module 'class-mongo/MongoEntity' {
             static del<T extends MongoEntity>(x: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
             static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
+            static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void>;
             static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static getCollection(): Promise<Collection>;
             static getDb(): Promise<Db>;
@@ -426,6 +427,7 @@ declare module 'class-mongo/mongo/Driver' {
     }>(coll: string, finder: TFindQuery<T>, x: T, callback: any): void;
     export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
     export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
+    export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
     export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
     export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;
     export function db_getMongo(): typeof MongoLib;
