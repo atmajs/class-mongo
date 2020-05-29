@@ -6,6 +6,7 @@ import MongoLib = require('mongodb');
 import { TFindQuery, IAggrExpression, IAggrPipeline } from './DriverTypes';
 import { DriverUtils } from './DriverUtils';
 import { obj_partialToUpdateQuery } from '../utils/patchObject';
+import { FindOptions } from '../types/FindOptions';
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
 export interface IndexOptions {
@@ -62,9 +63,14 @@ export function db_resolveDb() {
     return cb_toPromise(db_getDb);
 };
 
-export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery<T>, callback: ICallback<T>) {
+export function db_findSingle<T = any>(
+    coll: string
+    , query: MongoLib.FilterQuery<T>
+    , options: FindOptions<T> & MongoLib.FindOneOptions
+    , callback: ICallback<T>) {
+
     withDb(callback, db => {
-        core.findSingle(db, coll, queryToMongo(query), null, callback);
+        core.findSingle(db, coll, queryToMongo(query), options, callback);
     });
 };
 

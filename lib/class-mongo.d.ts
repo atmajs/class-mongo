@@ -19,15 +19,11 @@ declare module 'class-mongo/MongoEntity' {
      import { Serializable } from 'class-json';
     import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
+    import { FindOptions } from 'class-mongo/types/FindOptions';
     import MongoLib = require('mongodb');
-    interface FindOptions<T> {
-            projection?: {
-                    [key in keyof T]?: number | string;
-            };
-    }
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
-            static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>): Promise<InstanceType<T>>;
+            static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
             static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
             static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
                     collection: InstanceType<T>[];
@@ -65,7 +61,6 @@ declare module 'class-mongo/MongoEntity' {
             new (...args: any[]): T;
     };
     export function MongoEntityFor<T>(Base: Constructor<T>): Statics<Constructor<T>> & Statics<typeof MongoEntity> & (new (...args: any[]) => T & MongoEntity<unknown>);
-    export {};
 }
 
 declare module 'class-mongo/MongoIndexes' {
@@ -376,10 +371,19 @@ declare module 'class-mongo/mongo/DriverTypes' {
     }
 }
 
+declare module 'class-mongo/types/FindOptions' {
+    export interface FindOptions<T> {
+        projection?: {
+            [key in keyof T]?: number | string;
+        };
+    }
+}
+
 declare module 'class-mongo/mongo/Driver' {
     import { ICallback } from 'class-mongo/ICallback';
     import MongoLib = require('mongodb');
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
+    import { FindOptions } from 'class-mongo/types/FindOptions';
     export type IndexSpecification<T> = string | string[] | Record<keyof T, number>;
     export interface IndexOptions {
         unique?: boolean;
@@ -399,7 +403,7 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_resolveCollection(name: any): Promise<any>;
     export function db_getDb(callback: ICallback<MongoLib.Db>): void;
     export function db_resolveDb(): Promise<any>;
-    export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery<T>, callback: ICallback<T>): void;
+    export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: FindOptions<T> & MongoLib.FindOneOptions, callback: ICallback<T>): void;
     export function db_findMany<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>): void;
     export function db_findManyPaged<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<{
         collection: T[];

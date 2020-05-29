@@ -68,18 +68,19 @@ export function obj_isPatch(patch) {
 // === private
 
 function walk_mutator(obj, data, fn) {
-    for (var key in data)
+    for (var key in data) {
         fn(obj_getProperty(obj, key), data[key], key);
-
+    }
 }
 
 function walk_modifier(obj, data, fn) {
-    for (var key in data)
+    for (var key in data) {
         obj_setProperty(
             obj,
             key,
             fn(obj_getProperty(obj, key), data[key], key)
         );
+    }
 }
 
 function fn_IoC(...fns) {

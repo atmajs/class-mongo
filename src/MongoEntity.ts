@@ -1,25 +1,42 @@
 import { JsonConvert, Serializable } from 'class-json'
-import { db_findSingle, db_insertSingle, db_updateSingle, db_findMany, db_insertMany, db_updateMany, db_remove, db_patchSingle, db_getCollection, db_getDb, db_count, db_updateManyBy, db_upsertManyBy, db_aggregate, db_upsertSingleBy, db_patchSingleBy, db_findManyPaged, db_patchMany } from './mongo/Driver';
+import {
+    db_findSingle,
+    db_insertSingle,
+    db_updateSingle,
+    db_findMany,
+    db_insertMany,
+    db_updateMany,
+    db_remove,
+    db_patchSingle,
+    db_getCollection,
+    db_getDb,
+    db_count,
+    db_updateManyBy,
+    db_upsertManyBy,
+    db_aggregate,
+    db_upsertSingleBy,
+    db_patchSingleBy,
+    db_findManyPaged,
+    db_patchMany
+} from './mongo/Driver';
+
 import { MongoMeta } from './MongoMeta';
 import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
-import { obj_patchValidate, obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
+import { obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
 import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
+import { FindOptions } from './types/FindOptions';
 
 import MongoLib = require('mongodb');
-
-interface FindOptions<T> {
-    projection?: { [key in keyof T]?: number | string }
-}
 
 export class MongoEntity<T = any> extends Serializable<T> {
 
     _id: string
 
-    static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>): Promise<InstanceType<T>> {
+    static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_findSingle, coll, query).then(json => {
+        return cb_toPromise(db_findSingle, coll, query, options).then(json => {
             if (json == null) {
                 return null;
             }
@@ -46,7 +63,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T
         , pipeline?: IAggrPipeline[]
-        , options?: {Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+        , options?: { Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
     ): Promise<TOut[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
@@ -55,7 +72,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T
         , pipeline?: IAggrPipeline[]
-        , options?: {Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+        , options?: { Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
     ): Promise<{ collection: TOut[], total: number }> {
         let coll = MongoMeta.getCollection(this);
         let countPipeline = [];
@@ -66,7 +83,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
             }
             countPipeline.push(x);
         }
-        countPipeline.push( { $count: 'count' });
+        countPipeline.push({ $count: 'count' });
 
         let $facet = {
             $facet: {
@@ -123,7 +140,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_getCollection, coll);
     }
-    static async getDb (): Promise<Db> {
+    static async getDb(): Promise<Db> {
         return cb_toPromise(db_getDb);
     }
     upsert(): Promise<this> {
@@ -133,7 +150,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.del(coll, this);
     }
-    patch <T extends MongoEntity> (this: T, patch: UpdateQuery<T>): Promise<T> {
+    patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T>): Promise<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patch(coll, this, patch);
     }
