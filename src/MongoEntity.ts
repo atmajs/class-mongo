@@ -299,19 +299,19 @@ namespace EntityMethods {
             patch
         );
     }
-    export function patch<T extends MongoEntity>(coll: string, x: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
-        let id = x._id;
+    export function patch<T extends MongoEntity>(coll: string, instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
+        let id = instance._id;
         if (id == null) {
             return Promise.reject(new Error(`<patch> 'id' is not defined for ${coll}`));
         }
         let update = obj_partialToUpdateQuery(patch);
-        obj_patch(this, update);
+        obj_patch(instance, update);
         return cb_toPromise(
             db_patchSingle,
             coll,
             id,
             update
-        ).then(_ => x);
+        ).then(_ => instance);
     }
     export function patchMany<T extends MongoEntity>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]) {
         return cb_toPromise(
