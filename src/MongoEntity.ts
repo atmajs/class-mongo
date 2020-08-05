@@ -302,7 +302,7 @@ namespace EntityMethods {
     export function patch<T extends MongoEntity>(coll: string, instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
         let id = instance._id;
         if (id == null) {
-            return Promise.reject(new Error(`<patch> 'id' is not defined for ${coll}`));
+            return Promise.reject(new Error(`<patch> '_id' is not defined for ${coll}`));
         }
         let update = obj_partialToUpdateQuery(patch);
         obj_patch(instance, update);

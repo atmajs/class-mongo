@@ -387,6 +387,7 @@ declare module 'class-mongo/mongo/Driver' {
     export type IndexSpecification<T> = string | string[] | Record<keyof T, number>;
     export interface IndexOptions {
         unique?: boolean;
+        sparse?: boolean;
         [key: string]: any;
     }
     export interface IndexRaw {
@@ -395,6 +396,7 @@ declare module 'class-mongo/mongo/Driver' {
         };
         name?: string;
         unique?: boolean;
+        sparse?: boolean;
         [key: string]: any;
     }
     export { core_profiler_getData as db_profiler_getData } from 'class-mongo/mongo/DriverProfiler';

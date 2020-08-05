@@ -11,12 +11,14 @@ import { FindOptions } from '../types/FindOptions';
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
 export interface IndexOptions {
     unique?: boolean
+    sparse?: boolean
     [ key: string]: any
 }
 export interface IndexRaw {
     key: { [property: string]: string | number }
     name?: string
     unique?: boolean
+    sparse?: boolean
     [ key: string]: any
 }
 
