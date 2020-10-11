@@ -165,15 +165,34 @@ export namespace core {
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<MongoLib.BulkWriteResult>) {
 
-            let ops = array.map(op => {
-                return {
-                    updateOne: {
-                        filter: op[0],
-                        update: obj_partialToUpdateQuery<any>(op[1]),
-                        upsert: false
+            let ops = array
+                .map(op => {
+                    let [ filter, data ] = op;
+                    let patch = obj_partialToUpdateQuery(data, true);
+                    if (patch == null) {
+                        return null;
                     }
-                }
-            });
+                    return {
+                        updateOne: {
+                            filter: filter,
+                            update: patch,
+                            upsert: false
+                        }
+                    }
+                })
+                .filter(x => x != null);
+
+            if (ops.length === 0) {
+                callback(null, <MongoLib.BulkWriteResult> <any> {
+                    ok: true,
+                    nInserted: 0,
+                    nModified: 0,
+                    nMatched: 0,
+                    nRemoved: 0,
+                    nUpserted: 0,
+                });
+                return;
+            }
             bulkWrite(db, coll, ops, (err, result: MongoLib.BulkWriteResult) => {
                 if (err) {
                     callback(err, null);
@@ -189,7 +208,17 @@ export namespace core {
         , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
 
-        let update = obj_partialToUpdateQuery(data);
+        let update = obj_partialToUpdateQuery(data, true);
+        if (update == null) {
+            callback(null, <MongoLib.UpdateWriteOpResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            });
+            return;
+        }
         db
             .collection(coll)
             .updateOne(query, update, opt_updateSingle, callback);
@@ -199,15 +228,32 @@ export namespace core {
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<WriteOpResult>) {
 
-        let ops = array.map(op => {
-            return {
-                updateOne: {
-                    filter: op[0],
-                    update: op[1],
-                    upsert: false
+        let ops = array
+            .map(op => {
+                let [ filter, data ] = op;
+                let patch = obj_partialToUpdateQuery(data, true);
+                if (patch == null) {
+                    return null;
                 }
-            }
-        });
+                return {
+                    updateOne: {
+                        filter: filter,
+                        update: patch,
+                        upsert: false
+                    }
+                };
+            })
+            .filter(x => x != null);
+        if (ops.length === 0) {
+            callback(null, <MongoLib.WriteOpResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            });
+            return;
+        }
         bulkWrite(db, coll, ops, callback);
     };
 

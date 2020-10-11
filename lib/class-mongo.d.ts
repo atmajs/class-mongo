@@ -19,14 +19,23 @@ declare module 'class-mongo/MongoEntity' {
      import { Serializable } from 'class-json';
     import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
-    import { FindOptions } from 'class-mongo/types/FindOptions';
+    import { FindOptions, FindOptionsProjected } from 'class-mongo/types/FindOptions';
     import MongoLib = require('mongodb');
+    type PickProjection<T, K extends keyof T> = {
+            [P in K]: T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P];
+    };
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
             static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
+            static fetchPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<PickProjection<InstanceType<T>, U>>;
             static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
+            static fetchManyPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<PickProjection<InstanceType<T>, U>[]>;
             static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
                     collection: InstanceType<T>[];
+                    total: number;
+            }>;
+            static fetchManyPagedPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<{
+                    collection: PickProjection<InstanceType<T>, U>[];
                     total: number;
             }>;
             static aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
@@ -61,6 +70,7 @@ declare module 'class-mongo/MongoEntity' {
             new (...args: any[]): T;
     };
     export function MongoEntityFor<T>(Base: Constructor<T>): Statics<Constructor<T>> & Statics<typeof MongoEntity> & (new (...args: any[]) => T & MongoEntity<unknown>);
+    export {};
 }
 
 declare module 'class-mongo/MongoIndexes' {
@@ -377,6 +387,13 @@ declare module 'class-mongo/types/FindOptions' {
             [key in keyof T]?: number | string;
         };
     }
+    export interface FindOptionsProjected<T extends object, U extends keyof T = keyof T> {
+        projection?: TProjection<T, U>;
+    }
+    type TProjection<T extends object, U extends keyof T> = {
+        [key in U]?: T[key] extends object ? TProjection<T[key], keyof T[key]> : number;
+    };
+    export {};
 }
 
 declare module 'class-mongo/mongo/Driver' {

@@ -15,20 +15,39 @@ UTest({
     },
     async 'should create and resolve instance' () {
 
-        
+
         class Foo extends Serializable<Foo> {
             _id: string
             letter: string
+            customer: {
+                name: string
+                email: string
+            }
         }
 
         @table('foos')
         class FooDb extends MongoEntityFor(Foo) {
-            
+
         }
+
+        let x = await FooDb.fetchPartial({
+
+        }, {
+            projection: {
+                letter: 1,
+                customer: {
+                    name: 1
+                }
+            }
+        });
+
+        x.letter;
+        x.customer.
+
 
         let fooSaved = new FooDb({ letter: 'a' });
         await fooSaved.upsert();
-        
+
 
         let id = String(fooSaved._id);
         gt_(id.length, 10);
@@ -70,7 +89,7 @@ UTest({
 
         @table('foos')
         class FooDb extends MongoEntityFor(Foo) {
-            
+
             @index('letter', { unique: true })
             letter: string
         }
@@ -79,7 +98,7 @@ UTest({
 
         let coll = await FooDb.getCollection();
         let indexes = await coll.indexInformation();
-        
+
         notEq_(indexes.letter, null);
     }
 })

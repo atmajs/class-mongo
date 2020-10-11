@@ -16,10 +16,11 @@ export function obj_patch(obj, patch) {
     return obj;
 };
 
-export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> | Partial<T>): MongoLib.UpdateQuery<T> {
+export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> | Partial<T>, isOptional?: boolean): MongoLib.UpdateQuery<T> {
     if (obj_isPatch(data)) {
         return data;
     }
+    let hasData = false;
     let $set:any = {};
     for (let key in data) {
         if (key === '_id') {
@@ -30,7 +31,11 @@ export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> 
             // skip any methods
             continue;
         }
+        hasData = true;
         $set[key] = val;
+    }
+    if (hasData === false && isOptional === true) {
+        return null;
     }
     return { $set };
 }
@@ -57,9 +62,11 @@ export function obj_isPatch(patch) {
     if (patch == null) {
         return false;
     }
-    for (var key in patches) {
+    for (let key in patches) {
         if (key in patch) {
-            return true;
+            for (let inner in patch[key]) {
+                return true;
+            }
         }
     }
     return false;
