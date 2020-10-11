@@ -33,7 +33,7 @@ import { ProjectionUtil } from './utils/projection';
 
 type PickProjection<T, K extends keyof T> = {
     [P in K]:
-        T[P] extends Array<infer TArr>
+        T[P] extends (Array<infer TArr> | Date)
         ? (T[P])
         : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P])
 };

@@ -22,7 +22,7 @@ declare module 'class-mongo/MongoEntity' {
     import { FindOptions, FindOptionsProjected } from 'class-mongo/types/FindOptions';
     import MongoLib = require('mongodb');
     type PickProjection<T, K extends keyof T> = {
-            [P in K]: T[P] extends Array<infer TArr> ? (T[P]) : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P]);
+            [P in K]: T[P] extends (Array<infer TArr> | Date) ? (T[P]) : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P]);
     };
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
