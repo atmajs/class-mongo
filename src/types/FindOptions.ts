@@ -9,7 +9,7 @@ export interface FindOptionsProjected <T extends object, U extends keyof T = key
 
 
 type TProjection<T extends object, U extends keyof T> = {
-    [key in U]?: T[key] extends object ? TProjection<T[key], keyof T[key]> : number;
+    [key in U]?: T[key] extends object ? (TProjection<T[key], keyof T[key]> | number) : number;
 }
 
 interface FindOptionsProjection<T extends object, U extends keyof T> {
