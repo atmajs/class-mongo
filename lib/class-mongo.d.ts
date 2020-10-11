@@ -391,7 +391,7 @@ declare module 'class-mongo/types/FindOptions' {
         projection?: TProjection<T, U>;
     }
     type TProjection<T extends object, U extends keyof T> = {
-        [key in U]?: T[key] extends object ? (TProjection<T[key], keyof T[key]> | number) : number;
+        [key in U]?: T[key] extends Array<infer TArr> ? (TArr extends object ? (TProjection<TArr, keyof TArr> | number) : number) : (T[key] extends object ? (TProjection<T[key], keyof T[key]> | number) : number);
     };
     export {};
 }
