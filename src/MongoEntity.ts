@@ -32,7 +32,10 @@ import MongoLib = require('mongodb');
 import { ProjectionUtil } from './utils/projection';
 
 type PickProjection<T, K extends keyof T> = {
-    [P in K]: T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P]
+    [P in K]:
+        T[P] extends Array<infer TArr>
+        ? (T[P])
+        : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P])
 };
 
 export class MongoEntity<T = any> extends Serializable<T> {
