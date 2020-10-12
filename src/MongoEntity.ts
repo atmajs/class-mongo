@@ -26,17 +26,17 @@ import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
 import { obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
 import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
-import { FindOptions, FindOptionsProjected } from './types/FindOptions';
+import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from './types/FindOptions';
 
 import MongoLib = require('mongodb');
 import { ProjectionUtil } from './utils/projection';
 
-type PickProjection<T, K extends keyof T> = {
-    [P in K]:
-        T[P] extends (Array<infer TArr> | Date)
-        ? (T[P])
-        : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P])
-};
+// type PickProjection<T, K extends keyof T> = {
+//     [P in K]:
+//         T[P] extends (Array<infer TArr> | Date)
+//         ? (T[P])
+//         : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P])
+// };
 
 export class MongoEntity<T = any> extends Serializable<T> {
 
@@ -53,11 +53,11 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async fetchPartial<
         T extends typeof MongoEntity,
-        U extends keyof InstanceType<T>,
+        P extends TProjection<InstanceType<T>>
     >(this: T
         , query: FilterQuery<T>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)
-    ): Promise<PickProjection<InstanceType<T>, U>> {
+        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+    ): Promise<TDeepPickByProjection<InstanceType<T>, P>> {
         return <any> this.fetch(query, <any> ProjectionUtil.handleOpts(options));
     }
 
@@ -72,11 +72,11 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async fetchManyPartial<
         T extends typeof MongoEntity,
-        U extends keyof InstanceType<T>,
+        P extends TProjection<InstanceType<T>>
     >(this: T
         , query: FilterQuery<T>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)
-    ): Promise<PickProjection<InstanceType<T>, U>[]> {
+        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+    ): Promise<TDeepPickByProjection<InstanceType<T>, P>[]> {
         return <any> this.fetchMany(query, <any> ProjectionUtil.handleOpts(options));
     }
 
@@ -94,11 +94,11 @@ export class MongoEntity<T = any> extends Serializable<T> {
     }
     static async fetchManyPagedPartial<
         T extends typeof MongoEntity,
-        U extends keyof InstanceType<T>,
+        P extends TProjection<InstanceType<T>>
     >(this: T
         , query: FilterQuery<T>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)
-    ): Promise<{ collection: PickProjection<InstanceType<T>, U>[], total: number }> {
+        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+    ): Promise<{ collection: TDeepPickByProjection<InstanceType<T>, P>[], total: number }> {
         return <any> this.fetchManyPaged(query, <any> ProjectionUtil.handleOpts(options));
     }
 

@@ -19,23 +19,20 @@ declare module 'class-mongo/MongoEntity' {
      import { Serializable } from 'class-json';
     import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
-    import { FindOptions, FindOptionsProjected } from 'class-mongo/types/FindOptions';
+    import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from 'class-mongo/types/FindOptions';
     import MongoLib = require('mongodb');
-    type PickProjection<T, K extends keyof T> = {
-            [P in K]: T[P] extends (Array<infer TArr> | Date) ? (T[P]) : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P]);
-    };
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
             static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
-            static fetchPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<PickProjection<InstanceType<T>, U>>;
+            static fetchPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>>;
             static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
-            static fetchManyPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<PickProjection<InstanceType<T>, U>[]>;
+            static fetchManyPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>[]>;
             static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
                     collection: InstanceType<T>[];
                     total: number;
             }>;
-            static fetchManyPagedPartial<T extends typeof MongoEntity, U extends keyof InstanceType<T>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, U>)): Promise<{
-                    collection: PickProjection<InstanceType<T>, U>[];
+            static fetchManyPagedPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<{
+                    collection: TDeepPickByProjection<InstanceType<T>, P>[];
                     total: number;
             }>;
             static aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
@@ -70,7 +67,6 @@ declare module 'class-mongo/MongoEntity' {
             new (...args: any[]): T;
     };
     export function MongoEntityFor<T>(Base: Constructor<T>): Statics<Constructor<T>> & Statics<typeof MongoEntity> & (new (...args: any[]) => T & MongoEntity<unknown>);
-    export {};
 }
 
 declare module 'class-mongo/MongoIndexes' {
@@ -382,18 +378,24 @@ declare module 'class-mongo/mongo/DriverTypes' {
 }
 
 declare module 'class-mongo/types/FindOptions' {
+    /** Raw MongoDB Projected*/
     export interface FindOptions<T> {
         projection?: {
             [key in keyof T]?: number | string;
         };
     }
-    export interface FindOptionsProjected<T extends object, U extends keyof T = keyof T> {
-        projection?: TProjection<T, U>;
+    /** Extended Projection: supports nested properties and type safety */
+    export interface FindOptionsProjected<T extends object, P extends TProjection<T>> {
+        projection?: P;
     }
-    type TProjection<T extends object, U extends keyof T> = {
-        [key in U]?: T[key] extends Array<infer TArr> ? (TArr extends object ? (TProjection<TArr, keyof TArr> | number) : number) : (T[key] extends object ? (TProjection<T[key], keyof T[key]> | number) : number);
+    export type TProjection<T extends object> = {
+        [K in keyof T]?: T[K] extends Array<infer TArr> ? (TArr extends object ? (TProjection<TArr> | number) : number) : (T[K] extends object ? (TProjection<T[K]> | number) : number);
     };
-    export {};
+    export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = {
+        [K in Extract<keyof T, keyof P>]: (P[K] extends number ? (T[K]) : (T[K] extends Array<infer TArr> ? (TArr extends object ? TDeepPickByProjection<TArr, P[K]> : never)[] : (T[K] extends object ? TDeepPickByProjection<T[K], P[K]> : never)));
+    } extends infer O ? {
+        [K in keyof O]: O[K];
+    } : never;
 }
 
 declare module 'class-mongo/mongo/Driver' {

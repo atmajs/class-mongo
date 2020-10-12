@@ -1,20 +1,34 @@
+/** Raw MongoDB Projected*/
 export interface FindOptions<T> {
     projection?: {
         [key in keyof T]?: number | string;
     };
 }
-export interface FindOptionsProjected <T extends object, U extends keyof T = keyof T>  {
-    projection?: TProjection<T, U>;
+
+/** Extended Projection: supports nested properties and type safety */
+export interface FindOptionsProjected <T extends object, P extends TProjection<T>> {
+    projection?: P;
 }
 
+export type TProjection<T extends object> = {
+    [K in keyof T]?:
+        T[K] extends Array<infer TArr>
+        ? (TArr extends object ? (TProjection<TArr> | number) : number)
+        : (T[K] extends object ? (TProjection<T[K]> | number) : number)
+  };
 
-type TProjection<T extends object, U extends keyof T> = {
-    [key in U]?:
-        T[key] extends Array<infer TArr>
-        ? (TArr extends object ? (TProjection<TArr, keyof TArr> | number) : number)
-        : (T[key] extends object ? (TProjection<T[key], keyof T[key]> | number) : number);
-}
-
-interface FindOptionsProjection<T extends object, U extends keyof T> {
-    projection: TProjection<T, U>;
-}
+export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = {
+    [K in Extract<keyof T, keyof P>]: (
+        P[K] extends number
+            ? (T[K])
+            : (
+                T[K] extends Array<infer TArr>
+                ? (TArr extends object
+                    ? TDeepPickByProjection<TArr, P[K]>
+                    : never)[]
+                : (T[K] extends object
+                    ? TDeepPickByProjection<T[K], P[K]>
+                    : never)
+            )
+    )
+} extends infer O ? { [K in keyof O]: O[K] } : never;

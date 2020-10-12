@@ -6,7 +6,7 @@ import { Json } from 'class-json';
 
 @table('users')
 class User extends MongoEntity<User> {
-    
+
     @index({ unique: true })
     email: string
 
@@ -34,7 +34,7 @@ UTest({
         await MongoIndexes.ensureAll();
         let coll = await User.getCollection();
         let info = await coll.indexInformation();
-        has_(info, 
+        has_(info,
             {
                 _id_: [ [ '_id', 1 ] ],
                 email: [ [ 'email', 1 ] ]
@@ -42,6 +42,17 @@ UTest({
         );
     },
     async 'upsert multiple' () {
+
+
+
+        class Foo extends MongoEntity<User> {
+
+            email: string
+            letters: { name: string, date: Date }[]
+            age: number
+        }
+
+
         let users = [
             new User({ name: 'Foo', email: 'foo@foo.fake' }),
             new User({ name: 'Bar', email: 'bar@bar.fake' }),
@@ -93,7 +104,7 @@ UTest({
 
 
         let qux2 = await User.upsertBy('email', new User({ email: 'qux@qux.fake', name: 'Qux4' }));
-        
+
         let qux4 = await User.fetch({ email: 'qux@qux.fake'});
         deepEq_(qux4.name, 'Qux4');
         eq_(String(qux1._id), String(qux4._id));
