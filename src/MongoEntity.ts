@@ -157,9 +157,9 @@ export class MongoEntity<T = any> extends Serializable<T> {
     static async upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
         return EntityMethods.upsertManyBy(finder, arr);
     }
-    static async del<T extends MongoEntity>(x: T): Promise<any> {
+    static async del<T extends MongoEntity>(entity: T): Promise<any> {
         let coll = MongoMeta.getCollection(this);
-        return EntityMethods.del(coll, x);
+        return EntityMethods.del(coll, entity);
     }
     static async delMany<T extends MongoEntity>(arr: T[]): Promise<any> {
         let coll = MongoMeta.getCollection(this);
@@ -362,16 +362,14 @@ namespace EntityMethods {
         );
     }
 
-
-    export function del(coll: string, x: { _id: string | Object }) {
+    export function del(coll: string, entity: { _id: string | Object }) {
         if (coll == null) {
-            return Promise.reject(new Error(`Delete for ${x._id} failed as Collection is not set`));
+            return Promise.reject(new Error(`Delete for ${entity._id} failed as Collection is not set`));
         }
-        if (x._id == null) {
+        if (entity._id == null) {
             return Promise.reject(new Error(`Delete in ${coll} failed as ID is undefined`));
         }
-
-        return cb_toPromise(db_remove, coll, x, true).then(x => {
+        return cb_toPromise(db_remove, coll, { _id: entity._id }, true).then(x => {
             return x.result;
         });
     }
