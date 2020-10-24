@@ -242,69 +242,53 @@ export function db_getMongo() {
     return core.getMongoLib();
 };
 
-var queryToMongo = function (query) {
-    if (query == null)
+const COMPARER = {
+    62: {
+        // >
+        0: '$gt',
+        // >=
+        61: '$gte'
+    },
+    60: {
+        // <
+        0: '$lt',
+        // <=
+        61: '$lte'
+    }
+};
+
+function queryToMongo (query) {
+    if (query == null) {
         return query;
-
-    if (query.hasOwnProperty('$query') || query.hasOwnProperty('$limit'))
+    }
+    if ('$query' in query || '$limit' in query) {
         return query;
-
-
-    if (query.hasOwnProperty('_id'))
+    }
+    if ('_id' in query) {
         query._id = DriverUtils.ensureObjectID(query._id);
-
-    var comparer = {
-        62: {
-            // >
-            0: '$gt',
-            // >=
-            61: '$gte'
-        },
-        60: {
-            // <
-            0: '$lt',
-            // <=
-            61: '$lte'
-        }
-    };
-
-    for (var key in query) {
-        var val = query[key],
-            c;
-
+    }
+    for (let key in query) {
+        let val = query[key];
         if (typeof val === 'string') {
-            c = val.charCodeAt(0);
+            let c = val.charCodeAt(0);
             switch (c) {
                 case 62:
                 case 60:
-
                     // >
-                    var compare = comparer[c]['0'];
-
+                    let compare = COMPARER[c]['0'];
                     if (val.charCodeAt(1) === 61) {
                         // =
-                        compare = comparer[c]['61'];
+                        compare = COMPARER[c]['61'];
                         val = val.substring(2);
                     } else {
                         val = val.substring(1);
                     }
                     query[key] = {};
                     query[key][compare] = parseFloat(val);
-
                     continue;
             };
         }
     }
 
     return query;
-};
-
-var createDbDelegate = function (fn, ...args) {
-    let cb = args[args.length - 1];
-    return function (error, db) {
-        if (error)
-            return cb(error);
-
-        return fn.call(null, db, ...args);
-    };
 };
