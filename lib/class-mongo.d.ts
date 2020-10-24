@@ -49,7 +49,7 @@ declare module 'class-mongo/MongoEntity' {
             static upsertBy<T extends MongoEntity>(finder: TFindQuery<T>, instance: T): Promise<T>;
             static upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]>;
             static upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]>;
-            static del<T extends MongoEntity>(x: T): Promise<any>;
+            static del<T extends MongoEntity>(entity: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
             static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
             static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void>;
