@@ -5,7 +5,7 @@
         "name": "Alexander Kit",
         "email": "alex.kit@atmajs.com"
     },
-    "version": "0.2.95",
+    "version": "0.2.97",
     "main": "./lib/class-mongo.js",
     "types": "./lib/class-mongo.d.ts",
     "repository": {

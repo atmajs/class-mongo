@@ -4,7 +4,7 @@ import MongoLib = require('mongodb');
  * copy($($0).find('td:first-child').map((i, el) => `${el.textContent}?: any`).toArray().join('\n'))
  */
 
-export type TFindQuery<T = any> = (keyof T) | Partial<T> | ((x: Partial<T>) => MongoLib.QuerySelector<T>);
+export type TFindQuery<T = any> = (keyof T) | Partial<T> | MongoLib.FilterQuery<T> | ((x: Partial<T>) => MongoLib.FilterQuery<T>);
 
 export type TKeySelector = number | string
 
@@ -21,14 +21,14 @@ export interface IAggrArithmeticExp {
     $mod?: [TAggrExpression, TAggrExpression]
     $multiply?: TAggrExpression[]
     $pow?: [TAggrExpression, TAggrExpression]
-    $round? : [ TAggrExpression, number? ] 
+    $round? : [ TAggrExpression, number? ]
     $sqrt?: TAggrExpression
     $subtract?: [TAggrExpression, TAggrExpression]
-    $trunc?:  [ TAggrExpression, number? ] 
+    $trunc?:  [ TAggrExpression, number? ]
 }
 
 export interface IAggrArrayExp {
-    
+
     $arrayElemAt?: [ TAggrExpression<any[]>, TAggrExpression<number> ]
     $arrayToObject?: TKeySelector | any
     $concatArrays?: TAggrExpression<any[]>[]
@@ -38,13 +38,13 @@ export interface IAggrArrayExp {
         cond: TAggrExpression<boolean>
     }
     $in?: [ TAggrExpression<any>, TAggrExpression<any[]> ]
-    
+
     /** [ <array expression>, <search expression>, <start>, <end> ]  */
-    $indexOfArray?: [ TAggrExpression<any[]>, TAggrExpression<string>, TAggrExpression<number>?, TAggrExpression<number>?] 
+    $indexOfArray?: [ TAggrExpression<any[]>, TAggrExpression<string>, TAggrExpression<number>?, TAggrExpression<number>?]
 
     $isArray?: [ TAggrExpression<any[]> ]
 
-    $map?: { 
+    $map?: {
         input:  TAggrExpression<any[]>
         /** name for the variable for `in` */
         as?: string
@@ -55,7 +55,7 @@ export interface IAggrArrayExp {
     $objectToArray?: any
 
     /** [ <start>, <end>, <non-zero step> ] */
-    $range?: [ TAggrExpression<number>, TAggrExpression<number>, number? ] 
+    $range?: [ TAggrExpression<number>, TAggrExpression<number>, number? ]
 
     $reduce?: {
         input: TAggrExpression<any[]>
@@ -95,15 +95,15 @@ export interface IAggrComparison {
 }
 
 export interface IAggrCondition {
-    $cond?: { 
-        if: TAggrExpression<boolean> 
-        then: TAggrExpression<any> 
+    $cond?: {
+        if: TAggrExpression<boolean>
+        then: TAggrExpression<any>
         else: TAggrExpression<any>
     } | [ TAggrExpression<boolean>, TAggrExpression<any>, TAggrExpression<any> ]
 
     $ifNull?: [ TAggrExpression<any> , TAggrExpression<any>  ]
     $switch?: {
-        branches: { 
+        branches: {
             case: TAggrExpression<boolean>
             then: TAggrExpression<any>
         } []
