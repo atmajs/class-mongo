@@ -5,13 +5,15 @@ import MongoLib = require('mongodb');
 
 export function obj_patch(obj, patch) {
 
-    for (var key in patch) {
+    for (const key in patch) {
 
-        var patcher = patches[key];
-        if (patcher)
-            patcher[fn_WALKER](obj, patch[key], patcher[fn_MODIFIER]);
-        else
+        let patcher = patches[key];
+        if (patcher) {
+            let [ walkerFn, modifierFn ] = patcher;
+            walkerFn(obj, patch[key], modifierFn);
+        } else {
             console.error('Unknown or not implemented patcher', key);
+        }
     }
     return obj;
 };
@@ -74,9 +76,9 @@ export function obj_isPatch(patch) {
 
 // === private
 
-function walk_mutator(obj, data, fn) {
-    for (var key in data) {
-        fn(obj_getProperty(obj, key), data[key], key);
+function walk_mutator<T = any>(obj: T, data, mutatorFn: (currentValue, mutatorData, key: string, obj: T) => any) {
+    for (const key in data) {
+        mutatorFn(obj_getProperty(obj, key), data[key], key, obj);
     }
 }
 
@@ -109,18 +111,22 @@ function arr_checkArray(val, mix, prop) {
     }
 }
 
-function arr_push(val, mix, prop) {
+function arr_push(currentVal, mix, prop, obj) {
+    if (currentVal == null) {
+        obj[prop] = [ mix ];
+        return;
+    }
     if (mix.hasOwnProperty('$each')) {
         for (var i = 0, imax = mix.$each.length; i < imax; i++) {
-            val.push(mix.$each[i]);
+            currentVal.push(mix.$each[i]);
         }
         return;
     }
-    val.push(mix);
+    currentVal.push(mix);
 }
 
-function arr_pop(val, mix, prop) {
-    val[mix > 0 ? 'pop' : 'shift']();
+function arr_pop(currentVal, mix, prop) {
+    currentVal?.[mix > 0 ? 'pop' : 'shift']();
 }
 function arr_pull(val, mix, prop) {
     arr_remove(val, function (item) {
@@ -166,13 +172,13 @@ var fn_WALKER = 0,
     ;
 
 var patches = {
-    '$push': [walk_mutator, fn_IoC(arr_checkArray, arr_push)],
-    '$pop': [walk_mutator, fn_IoC(arr_checkArray, arr_pop)],
-    '$pull': [walk_mutator, fn_IoC(arr_checkArray, arr_pull)],
+    '$push': [walk_mutator, arr_push],
+    '$pop': [walk_mutator, arr_pop],
+    '$pull': [walk_mutator, arr_pull],
 
     '$inc': [walk_modifier, val_inc],
     '$set': [walk_modifier, val_set],
     '$unset': [walk_modifier, val_unset],
     '$bit': [walk_modifier, val_bit],
-};
+} as const;
 
