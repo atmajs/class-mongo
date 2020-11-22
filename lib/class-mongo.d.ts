@@ -11,6 +11,7 @@ declare module 'class-mongo' {
     export { MongoSettings } from 'class-mongo/mongo/Settings';
     export { MongoUtils } from 'class-mongo/MongoUtils';
     export { MongoMeta } from 'class-mongo/MongoMeta';
+    export { MongoProfiler } from 'class-mongo/MongoProfiler';
     export { table, index } from 'class-mongo/decos';
 }
 
@@ -115,6 +116,18 @@ declare module 'class-mongo/MongoMeta' {
             function pickModelMeta(mix: Function | Object): ModelInfo<any> & IMongoMeta;
             function resolveModelMeta(mix: Function | Object): ModelInfo<any> & IMongoMeta;
             function getCollection(mix: Function | Object): string;
+    }
+}
+
+declare module 'class-mongo/MongoProfiler' {
+    import { IQueryInfo } from 'class-mongo/mongo/DriverProfiler'; 
+     export declare namespace MongoProfiler {
+            function toggle(enabled?: boolean, settings?: any): void;
+            function getData(): {
+                    count: number;
+                    slow: IQueryInfo[];
+                    errors: Error[];
+            };
     }
 }
 
@@ -458,12 +471,6 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_getMongo(): typeof MongoLib;
 }
 
-declare module 'class-mongo/ICallback' {
-    export interface ICallback<T> {
-        (error: Error | string, result?: T): void;
-    }
-}
-
 declare module 'class-mongo/mongo/DriverProfiler' {
     export interface IQueryInfo {
         coll: string;
@@ -482,5 +489,11 @@ declare module 'class-mongo/mongo/DriverProfiler' {
         errors: Error[];
     };
     export function core_profiler_toggle(enable: any, settings: any): void;
+}
+
+declare module 'class-mongo/ICallback' {
+    export interface ICallback<T> {
+        (error: Error | string, result?: T): void;
+    }
 }
 
