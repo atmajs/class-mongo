@@ -57,7 +57,7 @@ export namespace core {
         , options: FindOneOptions
         , callback: MongoCallback<T | null> /*<error, item>*/) {
 
-        var c = db.collection(coll);
+        let c = db.collection(coll);
         if (options == null) {
             return c.findOne(query, callback);
         }
@@ -223,6 +223,28 @@ export namespace core {
             .collection(coll)
             .updateOne(query, update, opt_updateSingle, callback);
     };
+    export function updateMultiple<T = any>(db: MongoLib.Db
+        , coll: string
+        , query: FilterQuery<T>
+        , data: UpdateQuery<T> | Partial<T>
+        , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
+
+        let update = obj_partialToUpdateQuery(data, true);
+        if (update == null) {
+            callback(null, <MongoLib.UpdateWriteOpResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            });
+            return;
+        }
+        db
+            .collection(coll)
+            .updateMany(query, update, opt_updateMultiple, callback);
+    };
+
     export function updateMany<T = any>(db: MongoLib.Db
         , coll: string
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
@@ -306,6 +328,10 @@ const opt_upsertSingle = {
 const opt_updateSingle = {
     upsert: false,
     multi: false,
+};
+const opt_updateMultiple = {
+    upsert: false,
+    multi: true,
 };
 function modifyMany(modifier: Function, db, coll, array /*[[query, data]]*/, callback) {
     var error;

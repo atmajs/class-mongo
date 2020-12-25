@@ -17,7 +17,8 @@ import {
     db_upsertSingleBy,
     db_patchSingleBy,
     db_findManyPaged,
-    db_patchMany
+    db_patchMany,
+    db_patchMultipleBy
 } from './mongo/Driver';
 
 import { MongoMeta } from './MongoMeta';
@@ -42,7 +43,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
 
     _id: string
 
-    static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>> {
+    static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findSingle, coll, query, options).then(json => {
             if (json == null) {
@@ -55,14 +56,14 @@ export class MongoEntity<T = any> extends Serializable<T> {
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<T>
+        , query: FilterQuery<InstanceType<T>>
         , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<TDeepPickByProjection<InstanceType<T>, P>> {
         return <any> this.fetch(query, <any> ProjectionUtil.handleOpts(options));
     }
 
     static async fetchMany<T extends typeof MongoEntity>(this: T
-        , query?: FilterQuery<T>
+        , query?: FilterQuery<InstanceType<T>>
         , options?: FindOptions<InstanceType<T>> & FindOneOptions
     ): Promise<InstanceType<T>[]> {
         let coll = MongoMeta.getCollection(this);
@@ -74,14 +75,14 @@ export class MongoEntity<T = any> extends Serializable<T> {
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<T>
+        , query: FilterQuery<InstanceType<T>>
         , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<TDeepPickByProjection<InstanceType<T>, P>[]> {
         return <any> this.fetchMany(query, <any> ProjectionUtil.handleOpts(options));
     }
 
     static async fetchManyPaged<T extends typeof MongoEntity>(this: T
-        , query?: FilterQuery<T>
+        , query?: FilterQuery<InstanceType<T>>
         , options?: FindOptions<InstanceType<T>> & FindOneOptions
     ): Promise<{ collection: InstanceType<T>[], total: number }> {
         let coll = MongoMeta.getCollection(this);
@@ -96,7 +97,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<T>
+        , query: FilterQuery<InstanceType<T>>
         , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<{ collection: TDeepPickByProjection<InstanceType<T>, P>[], total: number }> {
         return <any> this.fetchManyPaged(query, <any> ProjectionUtil.handleOpts(options));
@@ -176,6 +177,10 @@ export class MongoEntity<T = any> extends Serializable<T> {
     static async patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchBy(coll, finder, patch);
+    }
+    static async patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patchMultipleBy(coll, finder, patch);
     }
     static async getCollection(): Promise<Collection> {
         let coll = MongoMeta.getCollection(this);
@@ -340,6 +345,15 @@ namespace EntityMethods {
             patch
         );
     }
+    export function patchMultipleBy<T extends MongoEntity>(coll: string, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+        return cb_toPromise(
+            db_patchMultipleBy,
+            coll,
+            finder,
+            patch
+        );
+    }
+
     export function patch<T extends MongoEntity>(coll: string, instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
         let id = instance._id;
         if (id == null) {

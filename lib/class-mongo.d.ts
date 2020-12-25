@@ -24,15 +24,15 @@ declare module 'class-mongo/MongoEntity' {
     import MongoLib = require('mongodb');
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
-            static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
-            static fetchPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>>;
-            static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
-            static fetchManyPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>[]>;
-            static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<T>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
+            static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
+            static fetchPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>>;
+            static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
+            static fetchManyPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>[]>;
+            static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
                     collection: InstanceType<T>[];
                     total: number;
             }>;
-            static fetchManyPagedPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<T>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<{
+            static fetchManyPagedPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<{
                     collection: TDeepPickByProjection<InstanceType<T>, P>[];
                     total: number;
             }>;
@@ -55,6 +55,7 @@ declare module 'class-mongo/MongoEntity' {
             static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
             static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void>;
             static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
+            static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static getCollection(): Promise<Collection>;
             static getDb(): Promise<Db>;
             upsert(): Promise<this>;
@@ -465,6 +466,7 @@ declare module 'class-mongo/mongo/Driver' {
     }>(coll: string, finder: TFindQuery<T>, x: T, callback: any): void;
     export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
     export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
+    export function db_patchMultipleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
     export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
     export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
     export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;

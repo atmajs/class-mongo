@@ -211,6 +211,11 @@ export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>
         core.updateSingle(db, coll, query, patch, callback);
     });
 };
+export function db_patchMultipleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
+    withDb(callback, db => {
+        core.updateMultiple(db, coll, query, patch, callback);
+    });
+};
 export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback) {
     withDb(callback, db => {
         core.patchMany(db, coll, arr, callback);

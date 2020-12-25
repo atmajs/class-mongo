@@ -1,8 +1,9 @@
+import { MongoSettings } from '../src/mongo/Settings';
 import { MongoEntity } from '../src/MongoEntity';
 import { table, index } from '../src/decos';
-import { MongoIndexes, MongoSettings } from '../src/export';
 import { MongoProfiler } from '../src/MongoProfiler';
 import { Json } from 'class-json';
+
 
 @table('patch-test')
 class User extends MongoEntity<User> {
@@ -15,6 +16,8 @@ class User extends MongoEntity<User> {
 
     some: number
 }
+
+console.log('FOO', User);
 
 UTest({
     async $before() {
@@ -31,7 +34,7 @@ UTest({
         MongoProfiler.toggle(false);
     },
 
-    async 'patch multiple' () {
+    async 'patch many' () {
         let users = [
             new User({ name: 'Foo', email: 'foo@foo.fake' }),
             new User({ name: 'Bar', email: 'bar@bar.fake' }),
@@ -69,6 +72,29 @@ UTest({
         let _bar3 = await User.fetch({ _id: bar._id });
         eq_(_foo3.name, 'FooMany');
         eq_(_bar3.name, 'BarMany');
+    },
 
+    async 'patch multiple' () {
+        let users = [
+            new User({ name: 'Foo', email: 'foo@multiple.fake' }),
+            new User({ name: 'Bar', email: 'foo@multiple.fake' }),
+            new User({ name: 'Qux', email: 'foo@multiple1.fake' }),
+        ];
+
+        let result = await User.upsertMany(users);
+        eq_(result.length, 3);
+
+        let [foo, bar ] = result;
+        notEq_(foo._id, null);
+        eq_(foo.email, users[0].email);
+
+        await User.patchMultipleBy({ email: 'foo@multiple.fake' }, { name: 'Dux' });
+
+        let usersDb = await User.fetchMany({ email: 'foo@multiple.fake'});
+        eq_(usersDb[0].name, 'Dux');
+        eq_(usersDb[1].name, 'Dux');
+
+        let userDb = await User.fetch({ email: 'foo@multiple1.fake'});
+        eq_(userDb.name, 'Qux');
     }
 })
