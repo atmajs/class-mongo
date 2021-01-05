@@ -23,9 +23,22 @@ export namespace DriverUtils {
 
 
     export function ensureObjectID(value) {
+        if (value == null) {
+            return value;
+        }
+        let { ObjectID } = core.getMongoLib();
         if (typeof value === 'string' && value.length === 24) {
-            let { ObjectID } = core.getMongoLib();
             return new ObjectID(value);
+        }
+        if (value instanceof ObjectID) {
+            return value;
+        }
+
+        let $in = value.$in;
+        if ($in != null) {
+            for (let i = 0; i < $in.length; i++) {
+                $in[i] = ensureObjectID($in[i]);
+            }
         }
         return value;
     }
