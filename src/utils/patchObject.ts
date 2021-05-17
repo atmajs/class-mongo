@@ -1,7 +1,8 @@
-import { obj_getProperty, obj_setProperty, is_Array } from 'atma-utils';
+import { obj_getProperty, obj_setProperty, is_Array, is_rawObject } from 'atma-utils';
 import { arr_remove } from './array';
 
 import MongoLib = require('mongodb');
+import { DeepPartial } from '../types/DeepPartial';
 
 export function obj_patch(obj, patch) {
 
@@ -18,12 +19,16 @@ export function obj_patch(obj, patch) {
     return obj;
 };
 
-export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> | Partial<T>, isOptional?: boolean): MongoLib.UpdateQuery<T> {
+export function obj_partialToUpdateQuery<T = any>(
+    data: MongoLib.UpdateQuery<T> | DeepPartial<T> | Partial<T>
+    , isOptional?: boolean
+    , isDeep?: boolean
+): MongoLib.UpdateQuery<T> {
     if (obj_isPatch(data)) {
         return data;
     }
     let hasData = false;
-    let $set:any = {};
+    let $set:any = Object.create(null);
     for (let key in data) {
         if (key === '_id') {
             continue;
@@ -34,12 +39,29 @@ export function obj_partialToUpdateQuery<T = any>(data: MongoLib.UpdateQuery<T> 
             continue;
         }
         hasData = true;
+
+        if (isDeep === true && is_rawObject(val)) {
+            obj_flattern($set, val, key)
+            continue;
+        }
         $set[key] = val;
     }
     if (hasData === false && isOptional === true) {
         return null;
     }
     return { $set };
+}
+
+export function obj_flattern<T = any>(target: T, value, path: string = null): T {
+    if (!is_rawObject(value)) {
+        target[path] = value;
+        return;
+    }
+    for (let key in value) {
+        let p = path != null ? `${path}.${key}` : key;
+        obj_flattern(target, value[key], p);
+    }
+    return target;
 }
 
 export function obj_patchValidate(patch) {

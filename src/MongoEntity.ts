@@ -31,6 +31,7 @@ import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection }
 
 import MongoLib = require('mongodb');
 import { ProjectionUtil } from './utils/projection';
+import { DeepPartial } from './types/DeepPartial';
 
 // type PickProjection<T, K extends keyof T> = {
 //     [P in K]:
@@ -166,22 +167,64 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.delMany(coll, arr);
     }
-    static async patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
+
+    static async patch<T extends MongoEntity>(
+        instance: T
+        , patch: Partial<T> | UpdateQuery<T>
+    ): Promise<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patch(coll, instance, patch);
     }
-    static async patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void> {
+    static async patchDeeply<T extends MongoEntity>(
+        instance: T
+        , patch: Partial<T> | UpdateQuery<T>
+    ): Promise<T> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patch(coll, instance, patch, { deep: true });
+    }
+
+    static async patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]): Promise<void> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchMany(coll, arr);
     }
-    static async patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+
+    /**
+     * Find document by filter query, and patch it.
+     */
+    static async patchDeeplyBy<T extends MongoEntity>(
+        this: Constructor<T>
+        , finder: MongoLib.FilterQuery<T>
+        , patch: DeepPartial<T>
+    ): Promise<MongoLib.WriteOpResult> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patchBy(coll, finder, patch, { deep: true });
+    }
+    static async patchBy<T extends MongoEntity>(
+        this: Constructor<T>
+        , finder: MongoLib.FilterQuery<T>
+        , patch: Partial<T> | UpdateQuery<T>
+    ): Promise<MongoLib.WriteOpResult> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchBy(coll, finder, patch);
     }
-    static async patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+
+    static async patchMultipleBy<T extends MongoEntity>(
+        this: Constructor<T>
+        , finder: MongoLib.FilterQuery<T>
+        , patch: DeepPartial<T> | UpdateQuery<T>
+    ): Promise<MongoLib.WriteOpResult> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchMultipleBy(coll, finder, patch);
     }
+    static async patchMultipleDeeplyBy<T extends MongoEntity>(
+        this: Constructor<T>
+        , finder: MongoLib.FilterQuery<T>
+        , patch: DeepPartial<T> | UpdateQuery<T>
+    ): Promise<MongoLib.WriteOpResult> {
+        let coll = MongoMeta.getCollection(this);
+        return EntityMethods.patchMultipleBy(coll, finder, patch, { deep: true });
+    }
+
     static async getCollection(): Promise<Collection> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_getCollection, coll);
@@ -196,9 +239,19 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.del(coll, this);
     }
-    patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T>): Promise<T> {
+
+    patch<T extends MongoEntity>(
+        this: T
+        , patch: UpdateQuery<T> | DeepPartial<T>
+        , opts: { deep: true}
+    ): Promise<T>
+    patch<T extends MongoEntity>(
+        this: T
+        , patch: UpdateQuery<T> | Partial<T>
+        , opts?: { deep?: boolean}
+    ): Promise<T> {
         let coll = MongoMeta.getCollection(this);
-        return EntityMethods.patch(coll, this, patch);
+        return EntityMethods.patch(coll, this, patch, /*isDeep*/opts);
     }
 }
 
@@ -337,29 +390,45 @@ namespace EntityMethods {
         return arr;
     }
 
-    export function patchBy<T extends MongoEntity>(coll: string, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+    export function patchBy<T extends MongoEntity>(
+        coll: string
+        , finder: MongoLib.FilterQuery<T>
+        , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
+        , opts?: { deep?: boolean }): Promise<MongoLib.WriteOpResult> {
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
         return cb_toPromise(
             db_patchSingleBy,
             coll,
             finder,
-            patch
+            update
         );
     }
-    export function patchMultipleBy<T extends MongoEntity>(coll: string, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult> {
+    export function patchMultipleBy<T extends MongoEntity>(
+        coll: string
+        , finder: MongoLib.FilterQuery<T>
+        , patch: DeepPartial<T> | UpdateQuery<T>
+        , opts?: { deep?: boolean }
+    ): Promise<MongoLib.WriteOpResult> {
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
         return cb_toPromise(
             db_patchMultipleBy,
             coll,
             finder,
-            patch
+            update
         );
     }
 
-    export function patch<T extends MongoEntity>(coll: string, instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T> {
+    export function patch<T extends MongoEntity>(
+        coll: string
+        , instance: T
+        , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
+        , opts?: { deep?: boolean }
+    ): Promise<T> {
         let id = instance._id;
         if (id == null) {
             return Promise.reject(new Error(`<patch> '_id' is not defined for ${coll}`));
         }
-        let update = obj_partialToUpdateQuery(patch);
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
         obj_patch(instance, update);
         return cb_toPromise(
             db_patchSingle,
@@ -368,7 +437,16 @@ namespace EntityMethods {
             update
         ).then(_ => instance);
     }
-    export function patchMany<T extends MongoEntity>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]) {
+    export function patchMany<T extends MongoEntity>(
+        coll: string
+        , arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]
+        , opts?: { deep?: boolean }
+    ) {
+        if (opts?.deep) {
+            for (let i = 0; i < arr.length; i++) {
+                arr[i][1] = obj_partialToUpdateQuery(arr[i][1], false, /* deep */ true);
+            }
+        }
         return cb_toPromise(
             db_patchMany,
             coll,

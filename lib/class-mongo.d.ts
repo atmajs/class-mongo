@@ -22,6 +22,7 @@ declare module 'class-mongo/MongoEntity' {
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from 'class-mongo/types/FindOptions';
     import MongoLib = require('mongodb');
+    import { DeepPartial } from 'class-mongo/types/DeepPartial';
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
             static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
@@ -53,14 +54,22 @@ declare module 'class-mongo/MongoEntity' {
             static del<T extends MongoEntity>(entity: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
             static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
-            static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, Partial<T> | UpdateQuery<T>][]): Promise<void>;
+            static patchDeeply<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
+            static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]): Promise<void>;
+            /**
+                * Find document by filter query, and patch it.
+                */
+            static patchDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T>): Promise<MongoLib.WriteOpResult>;
             static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
-            static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
+            static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
+            static patchMultipleDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static getCollection(): Promise<Collection>;
             static getDb(): Promise<Db>;
             upsert(): Promise<this>;
             del(): Promise<any>;
-            patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T>): Promise<T>;
+            patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T> | DeepPartial<T>, opts: {
+                    deep: true;
+            }): Promise<T>;
     }
     export interface IEntity {
             _id: string;
@@ -410,6 +419,12 @@ declare module 'class-mongo/types/FindOptions' {
     } extends infer O ? {
         [K in keyof O]: O[K];
     } : never;
+}
+
+declare module 'class-mongo/types/DeepPartial' {
+    export type DeepPartial<T> = {
+        [key in keyof T]?: T[key] extends object ? DeepPartial<T[key]> : T[key];
+    };
 }
 
 declare module 'class-mongo/mongo/Driver' {

@@ -15,9 +15,12 @@ class User extends MongoEntity<User> {
     name: string
 
     some: number
-}
 
-console.log('FOO', User);
+    address: {
+        street: string
+        nr: number
+    }
+}
 
 UTest({
     async $before() {
@@ -96,5 +99,29 @@ UTest({
 
         let userDb = await User.fetch({ email: 'foo@multiple1.fake'});
         eq_(userDb.name, 'Qux');
+    },
+
+    async 'patch deeply' () {
+        let user = new User({
+            name: 'Lorem',
+            email: 'lorem@foo.fake',
+            address: {
+                street: 'istreet',
+                nr: 1
+            }
+        })
+        await user.upsert();
+
+        await User.patchDeeplyBy({ email: user.email }, {
+            address: {
+                nr: 2
+            }
+        });
+
+        user = await User.fetch({ email: user.email });
+        deepEq_(user.address, {
+            street: 'istreet',
+            nr: 2,
+        })
     }
 })
