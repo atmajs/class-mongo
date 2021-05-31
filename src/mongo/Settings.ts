@@ -7,7 +7,9 @@ let __params = {
     auto_reconnect: true,
     native_parser: true,
     useUnifiedTopology: true,
-    w: 1
+    writeConcern: {
+        w: 1
+    },
 };
 
 export interface IMongoSettings {

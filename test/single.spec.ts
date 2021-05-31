@@ -30,20 +30,6 @@ UTest({
 
         }
 
-        let x = await FooDb.fetchPartial({
-
-        }, {
-            projection: {
-                letter: 1,
-                customer: {
-                    name: 1
-                }
-            }
-        });
-
-        x.letter;
-        x.customer.
-
 
         let fooSaved = new FooDb({ letter: 'a' });
         await fooSaved.upsert();

@@ -4,4 +4,7 @@ test/
 tools/
 typings/
 .gitignore
+.travis.yml
+tsconfig-build.json
 src/
+assets/
