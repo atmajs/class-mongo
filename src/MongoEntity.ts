@@ -32,6 +32,7 @@ import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection }
 import MongoLib = require('mongodb');
 import { ProjectionUtil } from './utils/projection';
 import { DeepPartial } from './types/DeepPartial';
+import { TDbCollection } from './types/TDbCollection';
 
 // type PickProjection<T, K extends keyof T> = {
 //     [P in K]:
@@ -128,7 +129,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         }
         countPipeline.push({ $count: 'count' });
 
-        let $facet = {
+        let $facet = <any> {
             $facet: {
                 collection: pipeline,
                 total: countPipeline
@@ -229,8 +230,8 @@ export class MongoEntity<T = any> extends Serializable<T> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_getCollection, coll);
     }
-    static async getDb(): Promise<Db> {
-        return cb_toPromise(db_getDb);
+    static async getDb(server?: string): Promise<Db> {
+        return cb_toPromise(db_getDb, server);
     }
     upsert(): Promise<this> {
         return EntityMethods.save(this);
@@ -298,8 +299,8 @@ namespace EntityMethods {
         let result: MongoLib.UpdateWriteOpResult = await cb_toPromise(
             db_upsertSingleBy,
             coll,
-            finder,
-            x
+            <any> finder,
+            <any> x
         );
         if (result.upsertedId?._id && x._id == null) {
             (x as any)._id = result.upsertedId._id;
@@ -384,14 +385,14 @@ namespace EntityMethods {
         let result: MongoLib.BulkWriteResult = await cb_toPromise(
             db_upsertManyBy,
             coll,
-            finder,
+            <any> finder,
             arr
         );
         return arr;
     }
 
     export function patchBy<T extends MongoEntity>(
-        coll: string
+        coll: TDbCollection
         , finder: MongoLib.FilterQuery<T>
         , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
         , opts?: { deep?: boolean }): Promise<MongoLib.WriteOpResult> {
@@ -404,7 +405,7 @@ namespace EntityMethods {
         );
     }
     export function patchMultipleBy<T extends MongoEntity>(
-        coll: string
+        coll: TDbCollection
         , finder: MongoLib.FilterQuery<T>
         , patch: DeepPartial<T> | UpdateQuery<T>
         , opts?: { deep?: boolean }
@@ -419,7 +420,7 @@ namespace EntityMethods {
     }
 
     export function patch<T extends MongoEntity>(
-        coll: string
+        coll: TDbCollection
         , instance: T
         , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
         , opts?: { deep?: boolean }
@@ -438,7 +439,7 @@ namespace EntityMethods {
         ).then(_ => instance);
     }
     export function patchMany<T extends MongoEntity>(
-        coll: string
+        coll: TDbCollection
         , arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]
         , opts?: { deep?: boolean }
     ) {
@@ -454,7 +455,7 @@ namespace EntityMethods {
         );
     }
 
-    export function del(coll: string, entity: { _id: string | Object }) {
+    export function del(coll: TDbCollection, entity: { _id: string | Object }) {
         if (coll == null) {
             return Promise.reject(new Error(`Delete for ${entity._id} failed as Collection is not set`));
         }
@@ -465,7 +466,7 @@ namespace EntityMethods {
             return x.result;
         });
     }
-    export function delMany(coll: string, arr: { _id: string | Object }[]) {
+    export function delMany(coll: TDbCollection, arr: { _id: string | Object }[]) {
         if (coll == null) {
             return Promise.reject(new Error(`Delete many failed as collection is not set`));
         }

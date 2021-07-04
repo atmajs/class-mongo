@@ -65,7 +65,7 @@ declare module 'class-mongo/MongoEntity' {
             static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static patchMultipleDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
             static getCollection(): Promise<Collection>;
-            static getDb(): Promise<Db>;
+            static getDb(server?: string): Promise<Db>;
             upsert(): Promise<this>;
             del(): Promise<any>;
             patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T> | DeepPartial<T>, opts: {
@@ -89,6 +89,7 @@ declare module 'class-mongo/MongoIndexes' {
 
 declare module 'class-mongo/mongo/Settings' {
     export interface IMongoSettings {
+        name?: string;
         db: string;
         ip?: string;
         port?: number;
@@ -99,16 +100,9 @@ declare module 'class-mongo/mongo/Settings' {
         function define(setts: IMongoSettings): void;
     }
     export function setts_define(setts: IMongoSettings): void;
-    export function setts_getConnectionString(): string;
-    export function setts_getParams(): {
-        auto_reconnect: boolean;
-        native_parser: boolean;
-        useUnifiedTopology: boolean;
-        writeConcern: {
-            w: number;
-        };
-    };
-    export function setts_getDbName(): string;
+    export function setts_getConnectionString(server?: string): string;
+    export function setts_getParams(server?: string): any;
+    export function setts_getDbName(server?: string): string;
 }
 
 declare module 'class-mongo/MongoUtils' {
@@ -121,14 +115,16 @@ declare module 'class-mongo/MongoMeta' {
     import { ModelInfo } from 'class-json/ModelInfo'; 
      /// <reference types="class-json" />
     import { IndexRaw } from 'class-mongo/mongo/Driver';
+    import { TDbCollection } from 'class-mongo/types/TDbCollection';
     export interface IMongoMeta {
             collection: string;
+            server?: string;
             indexes: IndexRaw[];
     }
     export namespace MongoMeta {
             function pickModelMeta(mix: Function | Object): ModelInfo<any> & IMongoMeta;
             function resolveModelMeta(mix: Function | Object): ModelInfo<any> & IMongoMeta;
-            function getCollection(mix: Function | Object): string;
+            function getCollection(mix: Function | Object): TDbCollection;
     }
 }
 
@@ -146,7 +142,8 @@ declare module 'class-mongo/MongoProfiler' {
 
 declare module 'class-mongo/decos' {
     import { IndexOptions, IndexRaw } from 'class-mongo/mongo/Driver';
-    export function table(name: string): (target: any) => any;
+    import { IConnectionSettings } from 'class-mongo/types/IConnectionSettings';
+    export function table(name: string, options?: IConnectionSettings): (target: any) => any;
     export function index(index: IndexRaw): any;
     export function index(opts?: IndexOptions): any;
     export function index(name: string, opts?: IndexOptions): any;
@@ -435,6 +432,7 @@ declare module 'class-mongo/mongo/Driver' {
     import MongoLib = require('mongodb');
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions } from 'class-mongo/types/FindOptions';
+    import { TDbCollection } from 'class-mongo/types/TDbCollection';
     export type IndexSpecification<T> = string | string[] | Record<keyof T, number>;
     export interface IndexOptions {
         unique?: boolean;
@@ -452,43 +450,48 @@ declare module 'class-mongo/mongo/Driver' {
     }
     export { core_profiler_getData as db_profiler_getData } from 'class-mongo/mongo/DriverProfiler';
     export { core_profiler_toggle as db_profiler_toggle } from 'class-mongo/mongo/DriverProfiler';
-    export function db_getCollection(name: any, cb: ICallback<MongoLib.Collection>): void;
-    export function db_resolveCollection(name: any): Promise<any>;
-    export function db_getDb(callback: ICallback<MongoLib.Db>): void;
-    export function db_resolveDb(): Promise<any>;
-    export function db_findSingle<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: FindOptions<T> & MongoLib.FindOneOptions, callback: ICallback<T>): void;
-    export function db_findMany<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>): void;
-    export function db_findManyPaged<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<{
+    export function db_getCollection(meta: TDbCollection, cb: ICallback<MongoLib.Collection>): void;
+    export function db_resolveCollection(meta: TDbCollection): Promise<any>;
+    export function db_getDb(server: string, callback: ICallback<MongoLib.Db>): void;
+    export function db_resolveDb(server?: string): Promise<any>;
+    export function db_findSingle<T = any>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, options: FindOptions<T> & MongoLib.FindOneOptions, callback: ICallback<T>): void;
+    export function db_findMany<T = any>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>): void;
+    export function db_findManyPaged<T = any>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<{
         collection: T[];
         total: number;
     }>): void;
-    export function db_aggregate<T = any>(coll: string, pipeline: IAggrPipeline[], options: MongoLib.CollectionAggregationOptions, callback: ICallback<T[]>): void;
-    export function db_count<T = any>(coll: string, query: MongoLib.FilterQuery<T>, options: MongoLib.MongoCountPreferences, callback: ICallback<number>): void;
-    export function db_insert(coll: any, data: any, callback: any): void;
-    export function db_insertSingle(coll: string, data: any, callback: any): void;
-    export function db_insertMany(coll: any, data: any, callback: any): void;
+    export function db_aggregate<T = any>(coll: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.CollectionAggregationOptions, callback: ICallback<T[]>): void;
+    export function db_count<T = any>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.MongoCountPreferences, callback: ICallback<number>): void;
+    export function db_insert(coll: TDbCollection, data: any, callback: any): void;
+    export function db_insertSingle(coll: TDbCollection, data: any, callback: any): void;
+    export function db_insertMany(coll: TDbCollection, data: any, callback: any): void;
     export function db_updateSingle<T extends {
         _id: any;
-    }>(coll: string, data: T, callback: any): void;
+    }>(coll: TDbCollection, data: T, callback: any): void;
     export function db_updateMany<T extends {
         _id: any;
-    }>(coll: string, array: T[], callback: any): void;
+    }>(coll: TDbCollection, array: T[], callback: any): void;
     export function db_updateManyBy<T extends {
         _id: any;
-    }>(coll: string, finder: TFindQuery<T>, array: T[], callback: any): void;
+    }>(coll: TDbCollection, finder: TFindQuery<T>, array: T[], callback: any): void;
     export function db_upsertManyBy<T extends {
         _id: any;
-    }>(coll: string, finder: TFindQuery<T>, array: T[], callback: any): void;
+    }>(coll: TDbCollection, finder: TFindQuery<T>, array: T[], callback: any): void;
     export function db_upsertSingleBy<T extends {
         _id: any;
-    }>(coll: string, finder: TFindQuery<T>, x: T, callback: any): void;
-    export function db_patchSingle(coll: any, id: any, patch: any, callback: any): void;
-    export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
-    export function db_patchMultipleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
-    export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
-    export function db_remove(coll: any, query: any, isSingle: any, callback: any): void;
-    export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback: any): void;
+    }>(coll: TDbCollection, finder: TFindQuery<T>, x: T, callback: any): void;
+    export function db_patchSingle(coll: TDbCollection, id: any, patch: any, callback: any): void;
+    export function db_patchSingleBy<T>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
+    export function db_patchMultipleBy<T>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
+    export function db_patchMany<T>(coll: TDbCollection, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
+    export function db_remove(coll: TDbCollection, query: any, isSingle: any, callback: any): void;
+    export function db_ensureIndexes(coll: TDbCollection, indexes: IndexRaw[], callback: any): void;
     export function db_getMongo(): typeof MongoLib;
+}
+
+declare module 'class-mongo/types/TDbCollection' {
+    import { IMongoMeta } from 'class-mongo/MongoMeta';
+    export type TDbCollection = Pick<IMongoMeta, 'collection' | 'server'>;
 }
 
 declare module 'class-mongo/mongo/DriverProfiler' {
@@ -509,6 +512,13 @@ declare module 'class-mongo/mongo/DriverProfiler' {
         errors: Error[];
     };
     export function core_profiler_toggle(enable: any, settings: any): void;
+}
+
+declare module 'class-mongo/types/IConnectionSettings' {
+    export interface IConnectionSettings {
+        /** Server name, when not set, `default` is used */
+        server?: string;
+    }
 }
 
 declare module 'class-mongo/ICallback' {

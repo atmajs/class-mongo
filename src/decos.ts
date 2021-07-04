@@ -2,8 +2,9 @@ import { MongoMeta } from './MongoMeta';
 import { IndexOptions, IndexRaw } from './mongo/Driver';
 import { obj_extend, obj_extendMany, is_Object } from 'atma-utils';
 import { IndexHandler } from './mongo/IndexHandler';
+import { IConnectionSettings } from './types/IConnectionSettings';
 
-export function table (name: string) {
+export function table (name: string, options?: IConnectionSettings) {
     return function (target) {
         if (typeof target !== 'function') {
             throw new Error(`Decorator for table ${name} must be called on class Ctor`);
@@ -11,6 +12,7 @@ export function table (name: string) {
 
         let meta = MongoMeta.resolveModelMeta(target);
         meta.collection = name;
+        meta.server = options?.server;
         return target;
     }
 }

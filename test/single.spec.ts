@@ -1,15 +1,17 @@
 import { table, index } from '../src/decos';
 import { Serializable } from 'class-json';
-import { MongoEntity, MongoSettings, MongoIndexes } from '../src/export';
-import { MongoEntityFor } from '../src/MongoEntity';
-import { mixin } from 'atma-utils';
-import { db_remove, db_getDb, db_getCollection } from '../src/mongo/Driver';
+import { MongoSettings, MongoIndexes } from '../src/export';
+import { MongoEntity, MongoEntityFor } from '../src/MongoEntity';
+import { db_getCollection } from '../src/mongo/Driver';
 
 
 UTest({
     $before (done) {
-        MongoSettings.define({ db: 'class-store-mongo-test' });
-        db_getCollection('foos', (error, coll) => {
+        MongoSettings.define({
+            name: 'testDb',
+            db: 'class-store-mongo-test'
+        });
+        db_getCollection({ collection: 'foos', server: 'testDb' }, (error, coll) => {
             coll?.drop(done as any);
         });
     },
@@ -25,7 +27,7 @@ UTest({
             }
         }
 
-        @table('foos')
+        @table('foos', { server: 'testDb' })
         class FooDb extends MongoEntityFor(Foo) {
 
         }
@@ -73,7 +75,7 @@ UTest({
             letter: string
         }
 
-        @table('foos')
+        @table('foos', { server: 'testDb' })
         class FooDb extends MongoEntityFor(Foo) {
 
             @index('letter', { unique: true })
@@ -86,5 +88,23 @@ UTest({
         let indexes = await coll.indexInformation();
 
         notEq_(indexes.letter, null);
+    },
+
+
+    async 'should throw as db not found by name' () {
+        @table('foos', { server: 'fake' })
+        class FooDb extends MongoEntity<FooDb> {
+            _id: string
+            letter: string
+        }
+
+        let error: Error;
+        try {
+            let fooSaved = new FooDb({ letter: 'a' });
+            await fooSaved.upsert();
+        } catch (err) {
+            error = err;
+        }
+        has_(error?.message, 'fake');
     }
 })

@@ -17,9 +17,7 @@ export namespace IndexHandler {
             callback();
             return;
         }
-        let coll = meta.collection;
-        
-        db_ensureIndexes(coll, meta.indexes, callback);
+        db_ensureIndexes(meta, meta.indexes, callback);
     }
 
     export function ensureAll(callback) {

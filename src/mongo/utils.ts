@@ -1,4 +1,6 @@
 
+type Head<T extends any[]> = T extends [ ...infer Head, any ] ? Head : any[];
+
 export function cb_createListener(count, cb) {
     var _error;
     return function (error?) {
@@ -18,7 +20,7 @@ export function cb_completeDelegate(dfr) {
     }
 };
 
-export function cb_toPromise (fn, ...args): Promise<any> {
+export function cb_toPromise <T extends (...args) => any> (fn: T, ...args: Head<Parameters<T>>): Promise<any> {
     return new Promise((resolve, reject) => {
 
         fn(...args, (error, result) => {

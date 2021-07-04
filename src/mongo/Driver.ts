@@ -6,8 +6,13 @@ import MongoLib = require('mongodb');
 import { TFindQuery, IAggrExpression, IAggrPipeline } from './DriverTypes';
 import { DriverUtils } from './DriverUtils';
 import { FindOptions } from '../types/FindOptions';
+import { IMongoMeta } from '../MongoMeta';
+import { TDbCollection } from '../types/TDbCollection';
+
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
+
+
 export interface IndexOptions {
     unique?: boolean
     sparse?: boolean
@@ -25,10 +30,10 @@ export interface IndexRaw {
 export { core_profiler_getData as db_profiler_getData } from './DriverProfiler';
 export { core_profiler_toggle as db_profiler_toggle } from './DriverProfiler';
 
-function withDb(onError, fn: (db: MongoLib.Db) => void) {
-    let db = core.getDb();
+function withDb(onError, server: string, fn: (db: MongoLib.Db) => void) {
+    let db = core.getDb(server);
     if (db == null) {
-        core.connect((err, db) => {
+        core.connect(server, (err, db) => {
             if (err) {
                 onError(err);
                 return;
@@ -40,158 +45,159 @@ function withDb(onError, fn: (db: MongoLib.Db) => void) {
     fn(db);
 }
 
-export function db_getCollection(name, cb: ICallback<MongoLib.Collection>) {
-    withDb(cb, db => {
-        let coll = db.collection(name);
+export function db_getCollection(meta: TDbCollection, cb: ICallback<MongoLib.Collection>) {
+    withDb(cb, meta.server, db => {
+        let coll = db.collection(meta.collection);
         if (coll == null) {
-            return cb(new Error(`<mongo> Collection Not Found: ${name}`));
+            return cb(new Error(`<mongo> Collection Not Found: ${meta}`));
         }
         cb(null, coll);
     });
 };
 
-export function db_resolveCollection(name) {
-    return cb_toPromise(db_getCollection, name);
+export function db_resolveCollection(meta: TDbCollection) {
+    return cb_toPromise(db_getCollection, meta);
 };
 
-export function db_getDb(callback: ICallback<MongoLib.Db>) {
-    withDb(callback, db => {
+export function db_getDb(server: string, callback: ICallback<MongoLib.Db>) {
+    withDb(callback, server, db => {
         callback(null, db);
     });
 };
 
-export function db_resolveDb() {
-    return cb_toPromise(db_getDb);
+export function db_resolveDb(server?: string) {
+    return cb_toPromise(db_getDb, server);
 };
 
 export function db_findSingle<T = any>(
-    coll: string
+    coll: TDbCollection
     , query: MongoLib.FilterQuery<T>
     , options: FindOptions<T> & MongoLib.FindOneOptions
-    , callback: ICallback<T>) {
+    , callback: ICallback<T>
+) {
 
-    withDb(callback, db => {
-        core.findSingle(db, coll, queryToMongo(query), options, callback);
+    withDb(callback, coll.server, db => {
+        core.findSingle(db, coll.collection, queryToMongo(query), options, callback);
     });
 };
 
-export function db_findMany<T = any>(coll: string
+export function db_findMany<T = any>(coll: TDbCollection
     , query: MongoLib.FilterQuery<T>
     , options: MongoLib.FindOneOptions
     , callback: ICallback<T[]>) {
 
-    withDb(callback, db => {
-        core.findMany(db, coll, queryToMongo(query), options ?? {}, callback);
+    withDb(callback, coll.server, db => {
+        core.findMany(db, coll.collection, queryToMongo(query), options ?? {}, callback);
     });
 };
 
-export function db_findManyPaged<T = any>(coll: string
+export function db_findManyPaged<T = any>(coll: TDbCollection
     , query: MongoLib.FilterQuery<T>
     , options: MongoLib.FindOneOptions
     , callback: ICallback<{collection: T[], total: number}>) {
 
-    withDb(callback, db => {
-        core.findManyPaged(db, coll, queryToMongo(query), options ?? {}, callback);
+    withDb(callback, coll.server, db => {
+        core.findManyPaged(db, coll.collection, queryToMongo(query), options ?? {}, callback);
     });
 };
 
-export function db_aggregate<T = any>(coll: string
+export function db_aggregate<T = any>(coll: TDbCollection
     , pipeline: IAggrPipeline[]
     , options: MongoLib.CollectionAggregationOptions
     , callback: ICallback<T[]>) {
 
-    withDb(callback, db => {
-        core.aggregate(db, coll, pipeline, options ?? {}, callback);
+    withDb(callback, coll.server, db => {
+        core.aggregate(db, coll.collection, pipeline, options ?? {}, callback);
     });
 };
 
 
 
 export function db_count<T = any>(
-    coll: string
+    coll: TDbCollection
     , query: MongoLib.FilterQuery<T>
     , options: MongoLib.MongoCountPreferences = null
     , callback: ICallback<number>) {
-    withDb(callback, db => {
-        core.count(db, coll, query, options, callback);
+    withDb(callback, coll.server, db => {
+        core.count(db, coll.collection, query, options, callback);
     });
 };
 
-export function db_insert(coll, data, callback) {
-    withDb(callback, db => {
+export function db_insert(coll:TDbCollection, data, callback) {
+    withDb(callback, coll.server, db => {
         db
-            .collection(coll)
+            .collection(coll.collection)
             .insert(data, {}, callback);
     });
 };
-export function db_insertSingle(coll: string, data, callback) {
-    withDb(callback, db => {
+export function db_insertSingle(coll: TDbCollection, data, callback) {
+    withDb(callback, coll.server, db => {
         db
-            .collection(coll)
+            .collection(coll.collection)
             .insertOne(data, {}, callback);
     });
 };
-export function db_insertMany(coll, data, callback) {
-    withDb(callback, db => {
+export function db_insertMany(coll: TDbCollection, data, callback) {
+    withDb(callback, coll.server, db => {
         db
-            .collection(coll)
+            .collection(coll.collection)
             .insertMany(data, {}, callback);
     });
 
 };
 
-export function db_updateSingle<T extends { _id: any }>(coll: string, data: T, callback) {
-    withDb(callback, db => {
+export function db_updateSingle<T extends { _id: any }>(coll: TDbCollection, data: T, callback) {
+    withDb(callback, coll.server, db => {
         if (data._id == null)
             return callback('<mongo:update> invalid ID');
 
         let query = {
             _id: DriverUtils.ensureObjectID(data._id)
         };
-        core.updateSingle(db, coll, query, data, callback);
+        core.updateSingle(db, coll.collection, query, data, callback);
     });
 };
 
-export function db_updateMany<T extends { _id: any }>(coll: string, array: T[], callback) {
-    withDb(callback, db => {
+export function db_updateMany<T extends { _id: any }>(coll: TDbCollection, array: T[], callback) {
+    withDb(callback, coll.server, db => {
         let batch: [any, any][] = array.map(x => {
             return [
                 { _id: DriverUtils.ensureObjectID(x._id) },
                 x
             ];
         });
-        core.updateMany(db, coll, batch, callback);
+        core.updateMany(db, coll.collection, batch, callback);
     });
 };
 
-export function db_updateManyBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, array: T[], callback) {
-    withDb(callback, db => {
+export function db_updateManyBy<T extends { _id: any }>(coll: TDbCollection, finder: TFindQuery<T>, array: T[], callback) {
+    withDb(callback, coll.server, db => {
         let batch: [any, any][] = array.map(x => {
             return [
                 DriverUtils.getFindQuery(finder, x),
                 x
             ];
         });
-        core.updateMany(db, coll, batch, callback);
+        core.updateMany(db, coll.collection, batch, callback);
     });
 };
 
 
-export function db_upsertManyBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, array: T[], callback) {
-    withDb(callback, db => {
+export function db_upsertManyBy<T extends { _id: any }>(coll: TDbCollection, finder: TFindQuery<T>, array: T[], callback) {
+    withDb(callback, coll.server, db => {
         let batch: [any, any][] = array.map(x => {
             return [
                 DriverUtils.getFindQuery(finder, x),
                 x
             ];
         });
-        core.upsertMany(db, coll, batch, callback);
+        core.upsertMany(db, coll.collection, batch, callback);
     });
 };
-export function db_upsertSingleBy<T extends { _id: any }>(coll: string, finder: TFindQuery<T>, x: T, callback) {
-    withDb(callback, db => {
+export function db_upsertSingleBy<T extends { _id: any }>(coll: TDbCollection, finder: TFindQuery<T>, x: T, callback) {
+    withDb(callback, coll.server, db => {
         core.upsertSingle(db,
-            coll
+            coll.collection
             , DriverUtils.getFindQuery(finder, x)
             , x
             , callback
@@ -200,45 +206,45 @@ export function db_upsertSingleBy<T extends { _id: any }>(coll: string, finder: 
 };
 
 
-export function db_patchSingle(coll, id, patch, callback) {
-    withDb(callback, db => {
+export function db_patchSingle(coll: TDbCollection, id, patch, callback) {
+    withDb(callback, coll.server, db => {
         let query = { _id: DriverUtils.ensureObjectID(id) };
-        core.updateSingle(db, coll, query, patch, callback);
+        core.updateSingle(db, coll.collection, query, patch, callback);
     });
 };
-export function db_patchSingleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
-    withDb(callback, db => {
-        core.updateSingle(db, coll, query, patch, callback);
+export function db_patchSingleBy<T>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
+    withDb(callback, coll.server, db => {
+        core.updateSingle(db, coll.collection, query, patch, callback);
     });
 };
-export function db_patchMultipleBy<T>(coll: string, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
-    withDb(callback, db => {
-        core.updateMultiple(db, coll, query, patch, callback);
+export function db_patchMultipleBy<T>(coll: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback) {
+    withDb(callback, coll.server, db => {
+        core.updateMultiple(db, coll.collection, query, patch, callback);
     });
 };
-export function db_patchMany<T>(coll: string, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback) {
-    withDb(callback, db => {
-        core.patchMany(db, coll, arr, callback);
+export function db_patchMany<T>(coll: TDbCollection, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback) {
+    withDb(callback, coll.server, db => {
+        core.patchMany(db, coll.collection, arr, callback);
     });
 }
 
-export function db_remove(coll, query, isSingle, callback) {
-    withDb(callback, db => {
+export function db_remove(coll: TDbCollection, query, isSingle, callback) {
+    withDb(callback, coll.server, db => {
         query = queryToMongo(query);
 
         const fn = isSingle
             ? core.removeSingle
             : core.removeMany
             ;
-        fn(db, coll, query, callback);
+        fn(db, coll.collection, query, callback);
     });
 };
 
 
-export function db_ensureIndexes(collection: string, indexes: IndexRaw[], callback) {
-    withDb(callback, db => {
-        var coll = db.collection(collection);
-        coll.createIndexes(indexes, callback);
+export function db_ensureIndexes(coll: TDbCollection, indexes: IndexRaw[], callback) {
+    withDb(callback, coll.server, db => {
+        let dbCollection = db.collection(coll.collection);
+        dbCollection.createIndexes(indexes, callback);
     });
 
 };

@@ -1,49 +1,20 @@
 import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback, UpdateWriteOpResult } from 'mongodb'
 import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
-import { IAggrExpression, IAggrPipeline } from './DriverTypes';
+import { IAggrPipeline } from './DriverTypes';
 
 import MongoLib = require('mongodb');
 import { obj_partialToUpdateQuery } from '../utils/patchObject';
 
-// export type BulkWriteOp<T> = {
-//     insertOne: { document: T }
-// } | {
-//     updateOne: {
-//         filter: FilterQuery<T>,
-//         update: UpdateQuery<T> | Partial<T>
-//         upsert?: boolean
-//     }
-// } | {
-//     updateMany: {
-//         filter: FilterQuery<T>
-//         update: UpdateQuery<T> | Partial<T>
-//         upsert?: boolean
-//     }
-// } | {
-//     deleteOne: {
-//         filter: FilterQuery<T>
-//     }
-// } | {
-//     deleteMany: {
-//         filter: FilterQuery<T>
-//     }
-// } | {
-//     replaceOne: {
-//         filter: FilterQuery<T>,
-//         replacement: Partial<T>
-//         upsert?: boolean
-//     }
-// };
 
 export namespace core {
     let mongoLib: typeof MongoLib = null;
 
-    export function getDb() {
-        return Connections.getDb();
+    export function getDb(server: string) {
+        return Connections.getDb(server);
     };
 
-    export function connect(cb: (error, db: Db) => void) {
-        Connections.connect(null, null, cb);
+    export function connect(server: string, cb: (error, db: Db) => void) {
+        Connections.connect(server, null, cb);
     };
 
     export function getMongoLib(): typeof MongoLib {
@@ -405,25 +376,25 @@ namespace Connections {
         }
     }
 
-    export function getDb(url?: string): MongoLib.Db {
-        if (url == null) {
+    export function getDb(server?: string): MongoLib.Db {
+        if (server == null) {
             return _connection?.db;
         }
-        return _connections[url]?.db;
+        return _connections[server]?.db;
     }
 
-    export function connect(url: string = null, params: any = null, callback) {
-        let connection = url == null ? _connection : _connections[url];
+    export function connect(server: string = null, params: any = null, callback) {
+        let connection = server == null ? _connection : _connections[server];
         if (connection) {
             connection.connect(callback);
             return;
         }
-        let _url = url ?? setts_getConnectionString();
-        let _params = params ?? setts_getParams();
+        let _url = setts_getConnectionString(server);
+        let _params = params ?? setts_getParams(server);
 
         connection = new Connection(_url, _params);
 
-        _connections[url] = connection;
+        _connections[server] = connection;
         _connection = _connection ?? connection;
 
         connection.connect(callback);
