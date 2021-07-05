@@ -100,7 +100,7 @@ declare module 'class-mongo/mongo/Settings' {
     export namespace MongoSettings {
         function define(setts: IMongoSettings): void;
     }
-    export function setts_define(setts: IMongoSettings): void;
+    export function setts_define(setts: IMongoSettings | IMongoSettings[]): void;
     export function setts_getConnectionString(server?: string): string;
     export function setts_getParams(server?: string): any;
     export function setts_getDbName(server?: string): string;

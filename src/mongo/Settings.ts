@@ -36,7 +36,11 @@ export namespace MongoSettings {
     }
 }
 
-export function setts_define (setts: IMongoSettings) {
+export function setts_define (setts: IMongoSettings | IMongoSettings[]) {
+    if (Array.isArray(setts)) {
+        setts.forEach(x => setts_define(x));
+        return;
+    }
     let name = setts.name ?? 'default';
     let target = name === 'default' ? DefaultServer : Servers[name];
     if (target == null) {
