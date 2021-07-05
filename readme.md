@@ -5,8 +5,8 @@
 <h2 align="center"> <code>class-mongo</code> / MongoDB persistence layer</h2>
 
 <p align="center">
-    <a href='https://travis-ci.org/atmajs/class-mongo' target='_blank'>
-        <img src='https://travis-ci.org/atmajs/class-mongo.png?branch=master' />
+    <a href='https://travis-ci.com/atmajs/class-mongo' target='_blank'>
+        <img src='https://travis-ci.com/atmajs/class-mongo.png?branch=master' />
     </a>
     <a href='http://badge.fury.io/js/class-mongo' target='_blank'>
         <img src='https://badge.fury.io/js/class-mongo.svg' />
@@ -18,10 +18,10 @@ Lightweight but powerful MongoDB ORM on top of class entities.
 > with TypeScript support
 
 
-* [class-json](https://github.com/tenbits/class-json) is used as a `Serialization` and `Validation` library. 
+* [class-json](https://github.com/tenbits/class-json) is used as a `Serialization` and `Validation` library.
 > _this is loosely coupled and can be replaced with any other_
 
-* Can be decoupled from base classes: 
+* Can be decoupled from base classes:
 > _you may want to share same models in nodejs and browser environments_
 
 
@@ -31,8 +31,8 @@ Lightweight but powerful MongoDB ORM on top of class entities.
 import { Serializable, Json, Rule } from 'class-json'
 
 export class User extends Serializable<User> {
-    _id: string 
-    
+    _id: string
+
     @Rule.required()
     name: string
 
@@ -74,8 +74,8 @@ import { MongoEntity, table, index } from 'class-mongo'
 
 @table('users')
 export class User extends MongoEntity<User> {
-    _id: string 
-    
+    _id: string
+
     @index({ unique: true })
     @Rule.required()
     name: string
@@ -100,7 +100,7 @@ export class User extends MongoEntity<User> {
     - `1.07` [static patch](#106-static-patch)
     - `1.08` [static del](#107-static-del)
     - `1.09` [static delMany](#108-static-delmany)
-    
+
     - `1.10` [static getCollection](#109-getcollection)
     - `1.11` [static getDb](#110-static-getdb)
 
@@ -115,7 +115,8 @@ export class User extends MongoEntity<User> {
         - `2.2.1` [connection](#221-connection)
         - `2.2.2` [db](#222-db)
         - `2.2.3` [ip](#223-ip)
-        - `2.2.4` [port](#222-port)
+        - `2.2.4` [port](#224-port)
+        - `2.2.5` [name](#225-name)
 
 - `3` [namespace MongoIndexes](#3-namespace-mongoindexes)
     - `3.1` [ensureAll](#31-ensureall)

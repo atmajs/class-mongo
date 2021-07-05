@@ -90,6 +90,7 @@ declare module 'class-mongo/MongoIndexes' {
 declare module 'class-mongo/mongo/Settings' {
     export interface IMongoSettings {
         name?: string;
+        default?: boolean;
         db: string;
         ip?: string;
         port?: number;

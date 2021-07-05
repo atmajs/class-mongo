@@ -1,7 +1,7 @@
 
 export interface IMongoSettings {
     name?: string
-
+    default?: boolean
     db: string
     ip?: string
     port?: number
@@ -48,6 +48,12 @@ export function setts_define (setts: IMongoSettings) {
     target.db = setts.db ?? target.db;
     target.params = setts.params ?? target.params;
     target.connection = setts.connection ?? target.connection;
+    if (name !== 'default' && setts.default) {
+        setts_define({
+            ...setts,
+            name: null
+        });
+    }
 };
 
 
