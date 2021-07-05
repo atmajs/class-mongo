@@ -31,7 +31,7 @@ const DefaultServer = {
 const Servers = {} as { [name: string]: IMongoSettings }
 
 export namespace MongoSettings {
-    export function define (setts: IMongoSettings) {
+    export function define (setts: IMongoSettings | IMongoSettings[]) {
         setts_define(setts);
     }
 }
