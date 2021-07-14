@@ -139,7 +139,7 @@ function arr_push(currentVal, mix, prop, obj) {
         return;
     }
     if (mix.hasOwnProperty('$each')) {
-        for (var i = 0, imax = mix.$each.length; i < imax; i++) {
+        for (let i = 0, imax = mix.$each.length; i < imax; i++) {
             currentVal.push(mix.$each[i]);
         }
         return;
