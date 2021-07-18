@@ -209,7 +209,7 @@ export function db_upsertSingleBy<T extends { _id: any }>(meta: TDbCollection, f
 };
 
 
-export function db_patchSingle(meta: TDbCollection, id, patch, callback) {
+export function db_patchSingle<T>(meta: TDbCollection, id, patch: MongoLib.UpdateQuery<T>, callback) {
     withDb(callback, meta.server, db => {
         let query = { _id: DriverUtils.ensureObjectID(id) };
         core.updateSingle(db, meta, query, patch, callback);

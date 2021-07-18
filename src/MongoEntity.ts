@@ -172,7 +172,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         return EntityMethods.saveBy(finder, instance, this);
     }
     static async upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]> {
-        return EntityMethods.saveMany(arr);
+        return EntityMethods.saveMany(arr, this);
     }
     static async upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
         return EntityMethods.upsertManyBy(finder, arr, this);
@@ -325,11 +325,12 @@ namespace EntityMethods {
         return x as any;
     }
 
-    export function saveMany<T extends MongoEntity>(arr: T[]): Promise<T[]> {
+    export function saveMany<T extends MongoEntity>(arr: T[], Type?): Promise<T[]> {
         if (arr == null || arr.length === 0) {
             return Promise.resolve([]);
         }
-        let Type = arr[0].constructor;
+
+        Type = Type ?? arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
 
         let insert = [];
@@ -395,12 +396,12 @@ namespace EntityMethods {
         }
         Type = Type ?? arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
-
+        let jsons = arr.map(x => bson_fromEntity(x, Type));
         let result: MongoLib.BulkWriteResult = await cb_toPromise(
             db_upsertManyBy,
             coll,
             <any> finder,
-            arr
+            jsons
         );
         return arr;
     }

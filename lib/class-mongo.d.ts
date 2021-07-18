@@ -498,7 +498,7 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_upsertSingleBy<T extends {
         _id: any;
     }>(meta: TDbCollection, finder: TFindQuery<T>, x: T, callback: any): void;
-    export function db_patchSingle(meta: TDbCollection, id: any, patch: any, callback: any): void;
+    export function db_patchSingle<T>(meta: TDbCollection, id: any, patch: MongoLib.UpdateQuery<T>, callback: any): void;
     export function db_patchSingleBy<T>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
     export function db_patchMultipleBy<T>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
     export function db_patchMany<T>(meta: TDbCollection, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
