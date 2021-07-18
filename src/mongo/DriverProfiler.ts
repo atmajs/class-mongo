@@ -101,14 +101,14 @@ export function core_profiler_toggle(enable, settings) {
             , wrapMany(array)
             , analizator(coll, array));
     };
-    core.updateSingle = function (db, coll, query, mod, callback /*<error, stats>*/) {
+    core.updateSingle = function (db, meta, query, mod, callback /*<error, stats>*/) {
         _core_updateSingle.apply(null, arguments);
         _core_updateSingle(
             db
-            , coll
+            , meta
             , wrapQuery(query)
             , mod
-            , analizator(coll, query));
+            , analizator(meta, query));
     };
     core.updateMany = function (db, coll, array/*[[query, data]]*/, callback) {
         _core_updateMany.apply(null, arguments);

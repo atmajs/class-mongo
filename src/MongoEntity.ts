@@ -33,6 +33,7 @@ import MongoLib = require('mongodb');
 import { ProjectionUtil } from './utils/projection';
 import { DeepPartial } from './types/DeepPartial';
 import { TDbCollection } from './types/TDbCollection';
+import { bson_fromEntity, bson_toEntity } from './utils/bson';
 
 // type PickProjection<T, K extends keyof T> = {
 //     [P in K]:
@@ -47,11 +48,12 @@ export class MongoEntity<T = any> extends Serializable<T> {
 
     static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_findSingle, coll, query, options).then(json => {
-            if (json == null) {
+        return cb_toPromise(db_findSingle, coll, query, options).then(dbJson => {
+            if (dbJson == null) {
                 return null;
             }
-            return JsonConvert.fromJSON<InstanceType<T>>(json, { Type: this });
+            return bson_toEntity(dbJson, this);
+            //return JsonConvert.fromJSON<InstanceType<T>>(json, { Type: this });
         });
     }
     static async fetchPartial<
@@ -70,7 +72,11 @@ export class MongoEntity<T = any> extends Serializable<T> {
     ): Promise<InstanceType<T>[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findMany, coll, query, options).then(arr => {
-            return JsonConvert.fromJSON<InstanceType<T>[]>(arr, { Type: this });
+            if (arr == null) {
+                return null;
+            }
+            return arr.map(dbJson => bson_toEntity(dbJson, this));
+            //return JsonConvert.fromJSON<InstanceType<T>[]>(arr, { Type: this });
         });
     }
     static async fetchManyPartial<
@@ -89,8 +95,12 @@ export class MongoEntity<T = any> extends Serializable<T> {
     ): Promise<{ collection: InstanceType<T>[], total: number }> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findManyPaged, coll, query, options).then(result => {
+            let arr = result.collection;
+            if (arr != null) {
+                arr = arr.map(dbJson => bson_toEntity(dbJson, this));
+            }
             return {
-                collection: JsonConvert.fromJSON<InstanceType<T>[]>(result.collection, { Type: this }),
+                collection: arr, //JsonConvert.fromJSON<InstanceType<T>[]>(result.collection, { Type: this }),
                 total: result.total
             };
         });
@@ -111,7 +121,10 @@ export class MongoEntity<T = any> extends Serializable<T> {
     ): Promise<TOut[]> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
-            return JsonConvert.fromJSON<TOut[]>(arr, { Type: options?.Type });
+            if (arr != null) {
+                arr = arr.map(dbJson => bson_toEntity(dbJson, options?.Type ?? this));
+            }
+            return arr;//JsonConvert.fromJSON<TOut[]>(arr, { Type: options?.Type });
         });
     }
     static async aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T
@@ -137,8 +150,12 @@ export class MongoEntity<T = any> extends Serializable<T> {
         };
         return cb_toPromise(db_aggregate, coll, $facet, options).then(resArr => {
             let doc = resArr[0];
+            let arr = doc.collection;
+            if (arr != null) {
+                arr = arr.map(dbJson => bson_toEntity(dbJson, options?.Type  ?? this));
+            }
             return {
-                collection: JsonConvert.fromJSON<TOut[]>(doc.collection, { Type: options?.Type }),
+                collection: arr, //JsonConvert.fromJSON<TOut[]>(doc.collection, { Type: options?.Type }),
                 total: doc.total[0]?.count ?? 0
             };
         });
@@ -158,7 +175,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
         return EntityMethods.saveMany(arr);
     }
     static async upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
-        return EntityMethods.upsertManyBy(finder, arr);
+        return EntityMethods.upsertManyBy(finder, arr, this);
     }
     static async del<T extends MongoEntity>(entity: T): Promise<any> {
         let coll = MongoMeta.getCollection(this);
@@ -271,7 +288,7 @@ export function MongoEntityFor<T>(Base: Constructor<T>) {
 namespace EntityMethods {
     export function save<T extends MongoEntity>(x: T): Promise<T> {
         let coll = MongoMeta.getCollection(x);
-        let json = JsonConvert.toJSON(x, { Type: x.constructor as any })
+        let json = bson_fromEntity(x)
         let fn = json._id == null
             ? db_insertSingle
             : db_updateSingle
@@ -289,18 +306,18 @@ namespace EntityMethods {
             return x;
         });
     }
-    export async function saveBy<T extends MongoEntity>(finder: TFindQuery<T>, x: Partial<T>, Type?): Promise<T> {
+    export async function saveBy<T extends MongoEntity>(finder: TFindQuery<T>, x: T, Type?): Promise<T> {
         Type = Type ?? x.constructor;
         let coll = MongoMeta.getCollection(Type);
         if (coll == null) {
             return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
         }
-
+        let json = bson_fromEntity(x, Type);
         let result: MongoLib.UpdateWriteOpResult = await cb_toPromise(
             db_upsertSingleBy,
             coll,
             <any> finder,
-            <any> x
+            json
         );
         if (result.upsertedId?._id && x._id == null) {
             (x as any)._id = result.upsertedId._id;
@@ -315,13 +332,13 @@ namespace EntityMethods {
         let Type = arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
 
-        var insert = [],
-            insertIndexes = [],
-            update = [];
+        let insert = [];
+        let insertIndexes = [];
+        let update = [];
 
         for (let i = 0; i < arr.length; i++) {
             let x = arr[i];
-            let json = JsonConvert.toJSON(x, { Type: Type as any })
+            let json = bson_fromEntity(x, Type);
             if (x._id == null) {
                 insert.push(json);
                 insertIndexes.push(i);
@@ -355,7 +372,7 @@ namespace EntityMethods {
                     }
                     /**
                     *   @TODO make sure if mongodb returns an array of inserted documents
-                    *   in the same order as it was passed to insert method
+                    *   in the same order as it was passed to the insert method
                     */
                     for (var i = 0; i < insertIndexes.length; i++) {
                         let index = insertIndexes[i];
@@ -372,15 +389,12 @@ namespace EntityMethods {
         return dfr as any as Promise<T[]>;
     }
 
-    export async function upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]> {
+    export async function upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[], Type?): Promise<T[]> {
         if (arr == null || arr.length === 0) {
             return Promise.resolve([]);
         }
-        let Type = arr[0].constructor;
+        Type = Type ?? arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
-        if (coll == null) {
-            return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
-        }
 
         let result: MongoLib.BulkWriteResult = await cb_toPromise(
             db_upsertManyBy,
@@ -396,7 +410,7 @@ namespace EntityMethods {
         , finder: MongoLib.FilterQuery<T>
         , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
         , opts?: { deep?: boolean }): Promise<MongoLib.WriteOpResult> {
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
         return cb_toPromise(
             db_patchSingleBy,
             coll,
@@ -410,7 +424,7 @@ namespace EntityMethods {
         , patch: DeepPartial<T> | UpdateQuery<T>
         , opts?: { deep?: boolean }
     ): Promise<MongoLib.WriteOpResult> {
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
         return cb_toPromise(
             db_patchMultipleBy,
             coll,
@@ -429,7 +443,7 @@ namespace EntityMethods {
         if (id == null) {
             return Promise.reject(new Error(`<patch> '_id' is not defined for ${coll}`));
         }
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep);
+        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
         obj_patch(instance, update);
         return cb_toPromise(
             db_patchSingle,
@@ -445,7 +459,7 @@ namespace EntityMethods {
     ) {
         if (opts?.deep) {
             for (let i = 0; i < arr.length; i++) {
-                arr[i][1] = obj_partialToUpdateQuery(arr[i][1], false, /* deep */ true);
+                arr[i][1] = obj_partialToUpdateQuery(arr[i][1], false, /* deep */ true, coll);
             }
         }
         return cb_toPromise(

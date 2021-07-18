@@ -6,8 +6,15 @@ export interface IMongoMeta {
     collection: string
 
     server?: string
-    indexes: IndexRaw[]
+    indexes?: IndexRaw[]
+    types?: IMongoProperty[]
 };
+export interface IMongoProperty {
+    /** supports also nesting like "foo.bar.qux" */
+    property: string
+    TypeMongo: Function
+    TypeJS: Function
+}
 
 export namespace MongoMeta {
     export function pickModelMeta (mix: Function | Object) {

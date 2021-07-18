@@ -5,7 +5,7 @@
         "name": "Alexander Kit",
         "email": "alex.kit@atmajs.com"
     },
-    "version": "0.3.11",
+    "version": "0.3.12",
     "main": "./lib/class-mongo.js",
     "types": "./lib/class-mongo.d.ts",
     "repository": {
@@ -68,7 +68,7 @@
             "atma-loader-ts": {
                 "typescript": {
                     "compilerOptions": {
-                        "target": "es3",
+                        "target": "es2018",
                         "#if (TEST)": {
                             "module": "AMD"
                         },
@@ -82,7 +82,7 @@
     },
     "dependencies": {
         "@types/mongodb": "^3.5.14",
-        "atma-utils": "^0.2.48",
+        "atma-utils": "^0.2.51",
         "class-mongo": "^0.3.7",
         "mongodb": "^3.6.9"
     },

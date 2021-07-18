@@ -41,12 +41,15 @@ export class User extends Serializable<User> {
 
     @Json.type(Date)
     createdAt = new Date()
+
+    @Json.type(BigInt)
+    amount: bigint
 }
 ```
 
 ```ts
 import { User } from './User'
-import { MongoEntityFor, table, index } from 'class-mongo'
+import { MongoEntityFor, table, index, dbType } from 'class-mongo'
 
 
 @table('users')
@@ -54,6 +57,9 @@ export class UserDb extends MongoEntityFor(User) {
 
     @index({ unique: true })
     email: string
+
+    @dbType('decimal', { Type: BigInt })
+    amount: bigint
 }
 
 

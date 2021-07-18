@@ -16,8 +16,6 @@ UTest({
         });
     },
     async 'should create and resolve instance' () {
-
-
         class Foo extends Serializable<Foo> {
             _id: string
             letter: string
@@ -29,13 +27,10 @@ UTest({
 
         @table('foos', { server: 'testDb' })
         class FooDb extends MongoEntityFor(Foo) {
-
         }
-
 
         let fooSaved = new FooDb({ letter: 'a' });
         await fooSaved.upsert();
-
 
         let id = String(fooSaved._id);
         gt_(id.length, 10);

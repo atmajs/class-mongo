@@ -42,9 +42,6 @@ UTest({
         );
     },
     async 'upsert multiple' () {
-
-
-
         class Foo extends MongoEntity<User> {
 
             email: string

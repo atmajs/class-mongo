@@ -3,6 +3,8 @@ import { arr_remove } from './array';
 
 import MongoLib = require('mongodb');
 import { DeepPartial } from '../types/DeepPartial';
+import { IMongoMeta } from '../MongoMeta';
+import { bson_prepairPartial } from './bson';
 
 export function obj_patch(obj, patch) {
 
@@ -23,9 +25,13 @@ export function obj_partialToUpdateQuery<T = any>(
     data: MongoLib.UpdateQuery<T> | DeepPartial<T> | Partial<T>
     , isOptional?: boolean
     , isDeep?: boolean
+    , meta?: IMongoMeta
 ): MongoLib.UpdateQuery<T> {
     if (obj_isPatch(data)) {
         return data;
+    }
+    if (meta?.types) {
+        bson_prepairPartial(data, meta);
     }
     let hasData = false;
     let $set:any = Object.create(null);
@@ -203,4 +209,3 @@ var patches = {
     '$unset': [walk_modifier, val_unset],
     '$bit': [walk_modifier, val_bit],
 } as const;
-

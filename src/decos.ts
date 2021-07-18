@@ -3,6 +3,7 @@ import { IndexOptions, IndexRaw } from './mongo/Driver';
 import { obj_extend, obj_extendMany, is_Object } from 'atma-utils';
 import { IndexHandler } from './mongo/IndexHandler';
 import { IConnectionSettings } from './types/IConnectionSettings';
+import { TMongoType, Types } from './types/Types';
 
 export function table (name: string, options?: IConnectionSettings) {
     return function (target) {
@@ -77,5 +78,29 @@ export function index (arg1?: any, arg2?: any, arg3?: any) {
         let raw = arg1 as IndexRaw;
         indexes.push(raw);
         IndexHandler.register(typeof target === 'function' ? target : target.constructor);
+    }
+}
+
+
+/**
+ * @param Ctor
+ * @param propertyOverriden Supports also nesting path like `foo.bar.qux`;
+ * @returns
+ */
+export function dbType (CtorMix: TMongoType, opts: { property?: string, Type: Function }) {
+    return function (target, propertyKey?, descriptor?) {
+        let meta = MongoMeta.resolveModelMeta(target);
+        if (meta.types == null) {
+            meta.types = [];
+        }
+        let Ctor = typeof CtorMix === 'string'
+            ? Types.Mapping[CtorMix]
+            : CtorMix;
+
+        meta.types.push({
+            property: opts?.property ?? propertyKey,
+            TypeMongo: Ctor,
+            TypeJS: opts?.Type,
+        });
     }
 }

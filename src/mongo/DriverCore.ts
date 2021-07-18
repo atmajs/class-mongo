@@ -4,6 +4,7 @@ import { IAggrPipeline } from './DriverTypes';
 
 import MongoLib = require('mongodb');
 import { obj_partialToUpdateQuery } from '../utils/patchObject';
+import { TDbCollection } from '../types/TDbCollection';
 
 
 export namespace core {
@@ -96,7 +97,7 @@ export namespace core {
             .updateOne(query, update, opt_upsertSingle, callback);
     };
     export function upsertMany<T extends { _id: any } >(db: MongoLib.Db
-        , coll: string
+        , meta: TDbCollection
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<MongoLib.BulkWriteResult>) {
 
@@ -104,12 +105,12 @@ export namespace core {
                 return {
                     updateOne: {
                         filter: op[0],
-                        update: obj_partialToUpdateQuery<any>(op[1]),
+                        update: obj_partialToUpdateQuery<any>(op[1], null, null, meta),
                         upsert: true
                     }
                 }
             });
-            bulkWrite(db, coll, ops, (err, result: MongoLib.BulkWriteResult) => {
+            bulkWrite(db, meta.collection, ops, (err, result: MongoLib.BulkWriteResult) => {
                 if (err) {
                     callback(err, null);
                     return;
@@ -132,14 +133,14 @@ export namespace core {
             });
     };
     export function patchMany<T extends { _id: any } >(db: MongoLib.Db
-        , coll: string
+        , meta: TDbCollection
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<MongoLib.BulkWriteResult>) {
 
             let ops = array
                 .map(op => {
                     let [ filter, data ] = op;
-                    let patch = obj_partialToUpdateQuery(data, true);
+                    let patch = obj_partialToUpdateQuery(data, true, null, meta);
                     if (patch == null) {
                         return null;
                     }
@@ -164,7 +165,7 @@ export namespace core {
                 });
                 return;
             }
-            bulkWrite(db, coll, ops, (err, result: MongoLib.BulkWriteResult) => {
+            bulkWrite(db, meta.collection, ops, (err, result: MongoLib.BulkWriteResult) => {
                 if (err) {
                     callback(err, null);
                     return;
@@ -174,12 +175,12 @@ export namespace core {
     };
 
     export function updateSingle<T = any>(db: MongoLib.Db
-        , coll: string
+        , meta: TDbCollection
         , query: FilterQuery<T>
         , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
 
-        let update = obj_partialToUpdateQuery(data, true);
+        let update = obj_partialToUpdateQuery(data, true, null, meta);
         if (update == null) {
             callback(null, <MongoLib.UpdateWriteOpResult> <any> {
                 result: {
@@ -191,16 +192,16 @@ export namespace core {
             return;
         }
         db
-            .collection(coll)
+            .collection(meta.collection)
             .updateOne(query, update, opt_updateSingle, callback);
     };
     export function updateMultiple<T = any>(db: MongoLib.Db
-        , coll: string
+        , meta: TDbCollection
         , query: FilterQuery<T>
         , data: UpdateQuery<T> | Partial<T>
         , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
 
-        let update = obj_partialToUpdateQuery(data, true);
+        let update = obj_partialToUpdateQuery(data, true, null, meta);
         if (update == null) {
             callback(null, <MongoLib.UpdateWriteOpResult> <any> {
                 result: {
@@ -212,19 +213,19 @@ export namespace core {
             return;
         }
         db
-            .collection(coll)
+            .collection(meta.collection)
             .updateMany(query, update, opt_updateMultiple, callback);
     };
 
     export function updateMany<T = any>(db: MongoLib.Db
-        , coll: string
+        , meta: TDbCollection
         , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
         , callback: MongoCallback<WriteOpResult>) {
 
         let ops = array
             .map(op => {
                 let [ filter, data ] = op;
-                let patch = obj_partialToUpdateQuery(data, true);
+                let patch = obj_partialToUpdateQuery(data, true, null, meta);
                 if (patch == null) {
                     return null;
                 }
@@ -247,7 +248,7 @@ export namespace core {
             });
             return;
         }
-        bulkWrite(db, coll, ops, callback);
+        bulkWrite(db, meta.collection, ops, callback);
     };
 
     export function removeSingle<T = any>(db: MongoLib.Db

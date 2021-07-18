@@ -1,3 +1,3 @@
 import { IMongoMeta } from '../MongoMeta';
 
-export type TDbCollection = Pick<IMongoMeta, 'collection' | 'server'>;
+export type TDbCollection = IMongoMeta;
