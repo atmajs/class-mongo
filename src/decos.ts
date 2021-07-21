@@ -87,7 +87,11 @@ export function index (arg1?: any, arg2?: any, arg3?: any) {
  * @param propertyOverriden Supports also nesting path like `foo.bar.qux`;
  * @returns
  */
-export function dbType (CtorMix: TMongoType, opts: { property?: string, Type: Function }) {
+export function dbType (CtorMix: TMongoType, mix: Function | { property?: string, Type: Function }) {
+    let opts = typeof mix === 'function' ? {
+        Type: mix
+    } : mix;
+
     return function (target, propertyKey?, descriptor?) {
         let meta = MongoMeta.resolveModelMeta(target);
         if (meta.types == null) {

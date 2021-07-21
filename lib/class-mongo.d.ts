@@ -12,7 +12,7 @@ declare module 'class-mongo' {
     export { MongoUtils } from 'class-mongo/MongoUtils';
     export { MongoMeta } from 'class-mongo/MongoMeta';
     export { MongoProfiler } from 'class-mongo/MongoProfiler';
-    export { table, index } from 'class-mongo/decos';
+    export { table, index, dbType } from 'class-mongo/decos';
 }
 
 declare module 'class-mongo/MongoEntity' {
@@ -162,7 +162,7 @@ declare module 'class-mongo/decos' {
       * @param propertyOverriden Supports also nesting path like `foo.bar.qux`;
       * @returns
       */
-    export function dbType(CtorMix: TMongoType, opts: {
+    export function dbType(CtorMix: TMongoType, mix: Function | {
         property?: string;
         Type: Function;
     }): (target: any, propertyKey?: any, descriptor?: any) => void;

@@ -58,7 +58,8 @@ export class UserDb extends MongoEntityFor(User) {
     @index({ unique: true })
     email: string
 
-    @dbType('decimal', { Type: BigInt })
+    /*(MongoType, JsType)*/
+    @dbType('decimal', BigInt)
     amount: bigint
 }
 
