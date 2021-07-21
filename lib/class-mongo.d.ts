@@ -12,6 +12,7 @@ declare module 'class-mongo' {
     export { MongoUtils } from 'class-mongo/MongoUtils';
     export { MongoMeta } from 'class-mongo/MongoMeta';
     export { MongoProfiler } from 'class-mongo/MongoProfiler';
+    export { MongoBson } from 'class-mongo/MongoBson';
     export { table, index, dbType } from 'class-mongo/decos';
 }
 
@@ -145,6 +146,13 @@ declare module 'class-mongo/MongoProfiler' {
                     slow: IQueryInfo[];
                     errors: Error[];
             };
+    }
+}
+
+declare module 'class-mongo/MongoBson' {
+    export namespace MongoBson {
+        function fromObject(mix: any, Type?: any): any;
+        function toObject<T = any>(bson: any, Type?: new (...args: any[]) => T): T;
     }
 }
 

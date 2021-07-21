@@ -1,20 +1,56 @@
 import { obj_getProperty, obj_setProperty } from 'atma-utils';
 import { JsonConvert } from 'class-json';
+import { JsonSettings } from 'class-json/JsonSettings';
 
 import { MongoEntity } from '../MongoEntity';
 import { IMongoMeta, MongoMeta } from '../MongoMeta';
 import { bigint_toBson } from './bigint';
 
-export function bson_fromEntity (entity: MongoEntity , Type?) {
-    Type = Type ?? entity.constructor;
 
-    let json = JsonConvert.toJSON(entity, { Type });
+const JsonSettings = <JsonSettings>{
+    types: {
+        bigint: {
+            toJSON (instanceValue) {
+                return bigint_toBson(instanceValue);
+            },
+            fromJSON(jsonValue) {
+                return jsonValue == null
+                    ? null
+                    : BigInt(jsonValue.toString());
+            }
+        }
+    }
+}
+
+export function bson_fromObject (entity: MongoEntity | object , Type?) {
+    Type = Type ?? entity.constructor;
+    if (Type === Object) {
+        Type = null;
+    }
+
+    let bson = JsonConvert.toJSON(entity, {
+        ...JsonSettings,
+        Type
+    });
     let meta = MongoMeta.pickModelMeta(entity);
     if (meta?.types != null) {
-        mapToMongoTypes(json, meta.types);
+        mapToMongoTypes(bson, meta.types);
+    }
+    return bson;
+}
+export function bson_toObject  <T> (dbJson, Type): T {
+    let json = JsonConvert.fromJSON<T>(dbJson, {
+        ...JsonSettings,
+        Type
+    })
+    let meta = MongoMeta.pickModelMeta(Type);
+    if (meta?.types != null) {
+        mapToJsTypes(json, meta.types);
     }
     return json;
 }
+
+
 export function bson_toEntity <T> (dbJson, Type): T {
     let json = JsonConvert.fromJSON<T>(dbJson, { Type })
     let meta = MongoMeta.pickModelMeta(Type);

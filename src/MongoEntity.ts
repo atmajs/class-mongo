@@ -33,7 +33,7 @@ import * as MongoLib from 'mongodb';
 import { ProjectionUtil } from './utils/projection';
 import { DeepPartial } from './types/DeepPartial';
 import { TDbCollection } from './types/TDbCollection';
-import { bson_fromEntity, bson_toEntity } from './utils/bson';
+import { bson_fromObject, bson_toEntity } from './utils/bson';
 
 // type PickProjection<T, K extends keyof T> = {
 //     [P in K]:
@@ -288,7 +288,7 @@ export function MongoEntityFor<T>(Base: Constructor<T>) {
 namespace EntityMethods {
     export function save<T extends MongoEntity>(x: T): Promise<T> {
         let coll = MongoMeta.getCollection(x);
-        let json = bson_fromEntity(x)
+        let json = bson_fromObject(x)
         let fn = json._id == null
             ? db_insertSingle
             : db_updateSingle
@@ -312,7 +312,7 @@ namespace EntityMethods {
         if (coll == null) {
             return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
         }
-        let json = bson_fromEntity(x, Type);
+        let json = bson_fromObject(x, Type);
         let result: MongoLib.UpdateWriteOpResult = await cb_toPromise(
             db_upsertSingleBy,
             coll,
@@ -339,7 +339,7 @@ namespace EntityMethods {
 
         for (let i = 0; i < arr.length; i++) {
             let x = arr[i];
-            let json = bson_fromEntity(x, Type);
+            let json = bson_fromObject(x, Type);
             if (x._id == null) {
                 insert.push(json);
                 insertIndexes.push(i);
@@ -396,7 +396,7 @@ namespace EntityMethods {
         }
         Type = Type ?? arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
-        let jsons = arr.map(x => bson_fromEntity(x, Type));
+        let jsons = arr.map(x => bson_fromObject(x, Type));
         let result: MongoLib.BulkWriteResult = await cb_toPromise(
             db_upsertManyBy,
             coll,
