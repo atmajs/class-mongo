@@ -4,6 +4,8 @@
         "outDir": "ts-temp",
         "declaration": true,
         "sourceMap": false,
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "target": "ES2016",
+        "moduleResolution": "node"
     }
 }

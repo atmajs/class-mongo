@@ -1,5 +1,5 @@
 
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 
 
 export namespace Types {

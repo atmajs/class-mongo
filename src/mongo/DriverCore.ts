@@ -2,7 +2,7 @@ import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallb
 import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
 import { IAggrPipeline } from './DriverTypes';
 
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 import { obj_partialToUpdateQuery } from '../utils/patchObject';
 import { TDbCollection } from '../types/TDbCollection';
 

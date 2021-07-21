@@ -75,6 +75,13 @@ UTest({
         ];
 
         await User.upsertManyBy('key', users);
+
+        let fetched = await User.fetchMany({
+            amount: {
+                $lt: 2n
+            }
+        });
+        eq_(fetched.length, 1);
     },
 
 })

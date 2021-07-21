@@ -3,6 +3,7 @@ import { JsonConvert } from 'class-json';
 
 import { MongoEntity } from '../MongoEntity';
 import { IMongoMeta, MongoMeta } from '../MongoMeta';
+import { bigint_toBson } from './bigint';
 
 export function bson_fromEntity (entity: MongoEntity , Type?) {
     Type = Type ?? entity.constructor;
@@ -30,6 +31,13 @@ export function bson_prepairPartial (json: any, meta: IMongoMeta) {
     }
 }
 
+export function bson_normalizeQuery (query: any) {
+    if (query == null) {
+        return;
+    }
+    Query.normalizeTypes(query);
+}
+
 function mapToMongoTypes (json, types: IMongoMeta['types']) {
     for (let i = 0; i < types.length; i++) {
         let propInfo = types[i];
@@ -55,4 +63,48 @@ function mapToJsTypes (dbJson, types: IMongoMeta['types']) {
             obj_setProperty(dbJson, propInfo.property, val);
         }
     }
+}
+
+namespace Query {
+    export function normalizeTypes (mix) {
+        if (mix == null) {
+            return mix;
+        }
+        if (typeof mix !== 'object') {
+            return;
+        }
+        if (Array.isArray(mix)) {
+            for (let i = 0; i < mix.length; i++) {
+                let overriden = normalize(mix[i]);
+                if (overriden != null) {
+                    mix[i] = overriden;
+                }
+            }
+            return;
+        }
+        for (let key in mix) {
+            let overriden = normalize(mix[key]);
+            if (overriden != null) {
+                mix[key] = overriden;
+            }
+        }
+    }
+
+    function normalize (value) {
+        let t = typeof value;
+        if (t === 'bigint') {
+            return bigint_toBson(value);
+        }
+
+        if (t !== 'object') {
+            return null;
+        }
+
+        // go deep
+        normalizeTypes(value);
+        return null;
+    }
+
+
+
 }

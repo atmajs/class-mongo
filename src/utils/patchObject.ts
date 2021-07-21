@@ -1,7 +1,7 @@
 import { obj_getProperty, obj_setProperty, is_Array, is_rawObject } from 'atma-utils';
 import { arr_remove } from './array';
 
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 import { DeepPartial } from '../types/DeepPartial';
 import { IMongoMeta } from '../MongoMeta';
 import { bson_prepairPartial } from './bson';

@@ -29,7 +29,7 @@ import { obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
 import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
 import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from './types/FindOptions';
 
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 import { ProjectionUtil } from './utils/projection';
 import { DeepPartial } from './types/DeepPartial';
 import { TDbCollection } from './types/TDbCollection';

@@ -131,6 +131,7 @@ export class User extends MongoEntity<User> {
 - `4` [decorators](#4-decorators)
     - `4.1` [table](#41-table)
     - `4.2` [index](#42-index)
+    - `4.3` [dbType](#43-dbtype)
 
 ----
 

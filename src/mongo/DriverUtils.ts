@@ -1,6 +1,6 @@
 import { TFindQuery } from './DriverTypes';
 import { core } from './DriverCore';
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 
 
 export namespace DriverUtils {

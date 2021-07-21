@@ -1,4 +1,4 @@
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 
 /**
  * copy($($0).find('td:first-child').map((i, el) => `${el.textContent}?: any`).toArray().join('\n'))

@@ -22,7 +22,7 @@ declare module 'class-mongo/MongoEntity' {
     import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from 'class-mongo/types/FindOptions';
-    import MongoLib = require('mongodb');
+    import * as MongoLib from 'mongodb';
     import { DeepPartial } from 'class-mongo/types/DeepPartial';
     export class MongoEntity<T = any> extends Serializable<T> {
             _id: string;
@@ -169,7 +169,7 @@ declare module 'class-mongo/decos' {
 }
 
 declare module 'class-mongo/mongo/DriverTypes' {
-    import MongoLib = require('mongodb');
+    import * as MongoLib from 'mongodb';
     /**
       * copy($($0).find('td:first-child').map((i, el) => `${el.textContent}?: any`).toArray().join('\n'))
       */
@@ -447,7 +447,7 @@ declare module 'class-mongo/types/DeepPartial' {
 
 declare module 'class-mongo/mongo/Driver' {
     import { ICallback } from 'class-mongo/ICallback';
-    import MongoLib = require('mongodb');
+    import * as MongoLib from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions } from 'class-mongo/types/FindOptions';
     import { TDbCollection } from 'class-mongo/types/TDbCollection';
@@ -540,7 +540,7 @@ declare module 'class-mongo/types/IConnectionSettings' {
 }
 
 declare module 'class-mongo/types/Types' {
-    import MongoLib = require('mongodb');
+    import * as MongoLib from 'mongodb';
     export namespace Types {
         function Decimal128(val: number | bigint | string | MongoLib.Decimal128): MongoLib.Decimal128;
         const Mapping: {

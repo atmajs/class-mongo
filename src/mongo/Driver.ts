@@ -2,12 +2,14 @@ import { core } from './DriverCore';
 import { cb_toPromise } from './utils';
 import { ICallback } from '../ICallback';
 
-import MongoLib = require('mongodb');
+import * as MongoLib from 'mongodb';
 import { TFindQuery, IAggrExpression, IAggrPipeline } from './DriverTypes';
 import { DriverUtils } from './DriverUtils';
 import { FindOptions } from '../types/FindOptions';
 import { IMongoMeta } from '../MongoMeta';
 import { TDbCollection } from '../types/TDbCollection';
+import { deprecated_log } from '../utils/deprecated';
+import { bson_normalizeQuery } from '../utils/bson';
 
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
@@ -275,6 +277,8 @@ function queryToMongo (query) {
     if (query == null) {
         return query;
     }
+    bson_normalizeQuery(query);
+
     if ('$query' in query || '$limit' in query) {
         return query;
     }
@@ -288,6 +292,7 @@ function queryToMongo (query) {
             switch (c) {
                 case 62:
                 case 60:
+                    deprecated_log('07.2021 "foo": ">1" will be dropped. Use mongo queries instead');
                     // >
                     let compare = COMPARER[c]['0'];
                     if (val.charCodeAt(1) === 61) {
