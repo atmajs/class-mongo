@@ -36,7 +36,6 @@ function mapToMongoTypes (json, types: IMongoMeta['types']) {
         let current = obj_getProperty(json, propInfo.property);
         if (current != null) {
             let val = propInfo.TypeMongo(current);
-
             obj_setProperty(json, propInfo.property, val);
         }
     }

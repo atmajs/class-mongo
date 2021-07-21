@@ -3,7 +3,7 @@ import MongoLib = require('mongodb');
 
 
 export namespace Types {
-    export function Decimal128 (val: number | bigint | string | Buffer) {
+    export function Decimal128 (val: number | bigint | string | MongoLib.Decimal128) {
         switch (typeof val) {
             case 'undefined':
                 return null;
@@ -15,8 +15,14 @@ export namespace Types {
                     return MongoLib.Decimal128.fromString(String(BigInt(val)));
                 }
                 return MongoLib.Decimal128.fromString(val);
+            case 'object':
+                let bsonType = (val as any)._bsontype;
+                if (bsonType === 'Decimal128') {
+                    return val;
+                }
+                break;
         }
-        throw new Error(`Invalid decimal type for ${val}`);
+        throw new Error(`Invalid decimal type for ${val} (${typeof val})`);
     }
 
     export const Mapping = {

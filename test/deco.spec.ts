@@ -37,7 +37,7 @@ UTest({
         await db.dropDatabase();
     },
 
-    async 'patch many' () {
+    async 'data types' () {
         @table('user-types')
         class User extends MongoEntity {
 
@@ -68,6 +68,13 @@ UTest({
         eq_(typeof loaded.amount, 'bigint');
         eq_(loaded.amount, amount);
 
+
+        let users = [
+            new User({ key: 'foo', amount: 1n }),
+            new User({ key: 'bar', amount: 2n }),
+        ];
+
+        await User.upsertManyBy('key', users);
     },
 
 })

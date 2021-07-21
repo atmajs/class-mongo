@@ -542,7 +542,7 @@ declare module 'class-mongo/types/IConnectionSettings' {
 declare module 'class-mongo/types/Types' {
     import MongoLib = require('mongodb');
     export namespace Types {
-        function Decimal128(val: number | bigint | string | Buffer): MongoLib.Decimal128;
+        function Decimal128(val: number | bigint | string | MongoLib.Decimal128): MongoLib.Decimal128;
         const Mapping: {
             decimal: typeof Decimal128;
         };
