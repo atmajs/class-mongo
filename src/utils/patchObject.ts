@@ -4,7 +4,7 @@ import { arr_remove } from './array';
 import * as MongoLib from 'mongodb';
 import { DeepPartial } from '../types/DeepPartial';
 import { IMongoMeta } from '../MongoMeta';
-import { bson_prepairPartial } from './bson';
+import { bson_prepairPartial, bson_toValue } from './bson';
 
 export function obj_patch(obj, patch) {
 
@@ -111,11 +111,14 @@ function walk_mutator<T = any>(obj: T, data, mutatorFn: (currentValue, mutatorDa
 }
 
 function walk_modifier(obj, data, fn) {
-    for (var key in data) {
+    for (let key in data) {
+        let value = bson_toValue(
+            obj_getProperty(obj, key)
+        );
         obj_setProperty(
             obj,
             key,
-            fn(obj_getProperty(obj, key), data[key], key)
+            fn(value, data[key], key)
         );
     }
 }

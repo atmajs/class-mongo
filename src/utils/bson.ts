@@ -1,10 +1,11 @@
 import { obj_getProperty, obj_setProperty } from 'atma-utils';
 import { JsonConvert } from 'class-json';
 import { JsonSettings } from 'class-json/JsonSettings';
+import { Decimal128 } from 'mongodb';
 
 import { MongoEntity } from '../MongoEntity';
 import { IMongoMeta, MongoMeta } from '../MongoMeta';
-import { bigint_toBson } from './bigint';
+import { bigint_fromBson, bigint_toBson } from './bigint';
 
 
 const JsonSettings = <JsonSettings>{
@@ -58,6 +59,13 @@ export function bson_toEntity <T> (dbJson, Type): T {
         mapToJsTypes(json, meta.types);
     }
     return json;
+}
+export function bson_toValue (value) {
+    let t = typeof value;
+    if (t === 'object' && value instanceof Decimal128) {
+        return bigint_fromBson(value);
+    }
+    return value;
 }
 
 
@@ -131,16 +139,11 @@ namespace Query {
         if (t === 'bigint') {
             return bigint_toBson(value);
         }
-
         if (t !== 'object') {
             return null;
         }
-
         // go deep
         normalizeTypes(value);
         return null;
     }
-
-
-
 }
