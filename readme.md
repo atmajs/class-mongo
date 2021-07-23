@@ -97,7 +97,6 @@ export class User extends MongoEntity<User> {
 
 # &#9776; API
 
-[Link](./docs/index.html)
 
 - `1` [class MongoEntity](#1-mongoentity)
 	- `1.01` [static fetch](#101-static-fetch)
