@@ -13,7 +13,7 @@
     </a>
 </p>
 
-Lightweight but powerful MongoDB ORM on top of class entities.
+Lightweight but powerful MongoDB ORM on top of class entities. Backed by [`mongodb`](https://www.npmjs.com/package/mongodb) native driver.
 
 > with TypeScript support
 

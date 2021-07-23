@@ -46,7 +46,16 @@ export class MongoEntity<T = any> extends Serializable<T> {
 
     _id: string
 
-    static async fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>> {
+    /**
+     * Equivalent to `findOne` method.
+     * @param query [MongoDB fetch query](https://mongodb.github.io/node-mongodb-native/4.0/modules.html#filter)
+     * @param options @see https://mongodb.github.io/node-mongodb-native/4.0/interfaces/findoptions.html
+     * @returns
+     */
+    static async fetch<T extends typeof MongoEntity>(this: T
+        , query: FilterQuery<InstanceType<T>>
+        , options?: FindOptions<InstanceType<T>> & FindOneOptions
+    ): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
         return cb_toPromise(db_findSingle, coll, query, options).then(dbJson => {
             if (dbJson == null) {
