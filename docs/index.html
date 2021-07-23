@@ -1,0 +1,283 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>MongoDB class ORM</title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+	<script async src="assets/js/search.js" id="search-script"></script>
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<ul class="results-priority" style="display:none">
+					</ul>
+					<a href="index.html" class="title">MongoDB class ORM</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+							<input type="checkbox" id="tsd-filter-only-exported" />
+							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+			</ul>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-3 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class=" ">
+						<a href="modules.html">Exports</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoBson.html">MongoBson</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoIndexes.html">MongoIndexes</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoMeta.html">MongoMeta</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoProfiler.html">MongoProfiler</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoSettings.html">MongoSettings</a>
+					</li>
+					<li class=" tsd-kind-namespace">
+						<a href="modules/MongoUtils.html">MongoUtils</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+		<div class="col-7 offset-3 col-content">
+			<h1>Project MongoDB class ORM</h1>
+			<div class="tsd-panel tsd-typography">
+				<p align='center'>
+					<img src='assets/logo.png'/>
+				</p>
+				<h2 align="center"> <code>class-mongo</code> / MongoDB persistence layer</h2>
+				<p align="center">
+					<a href='https://travis-ci.com/atmajs/class-mongo' target='_blank'>
+						<img src='https://travis-ci.com/atmajs/class-mongo.png?branch=master' />
+					</a>
+					<a href='http://badge.fury.io/js/class-mongo' target='_blank'>
+						<img src='https://badge.fury.io/js/class-mongo.svg' />
+					</a>
+				</p>
+				<p>Lightweight but powerful MongoDB ORM on top of class entities.</p>
+				<blockquote>
+					<p>with TypeScript support</p>
+				</blockquote>
+				<ul>
+					<li><p><a href="https://github.com/tenbits/class-json">class-json</a> is used as a <code>Serialization</code> and <code>Validation</code> library.</p>
+						<blockquote>
+							<p><em>this is loosely coupled and can be replaced with any other</em></p>
+						</blockquote>
+					</li>
+					<li><p>Can be decoupled from base classes:</p>
+						<blockquote>
+							<p><em>you may want to share same models in nodejs and browser environments</em></p>
+						</blockquote>
+					</li>
+				</ul>
+				<a href="#short-example-to-get-the-feeling" id="short-example-to-get-the-feeling" style="color: inherit; text-decoration: none;">
+					<h3>Short example to get the feeling.</h3>
+				</a>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">Serializable</span><span style="color: #000000">, </span><span style="color: #001080">Json</span><span style="color: #000000">, </span><span style="color: #001080">Rule</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;class-json&#039;</span>
+
+<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">class</span><span style="color: #000000"> </span><span style="color: #267F99">User</span><span style="color: #000000"> </span><span style="color: #0000FF">extends</span><span style="color: #000000"> </span><span style="color: #267F99">Serializable</span><span style="color: #000000">&lt;</span><span style="color: #267F99">User</span><span style="color: #000000">&gt; {</span>
+<span style="color: #000000">    </span><span style="color: #001080">_id</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Rule</span><span style="color: #000000">.</span><span style="color: #795E26">required</span><span style="color: #000000">()</span>
+<span style="color: #000000">    </span><span style="color: #001080">name</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Rule</span><span style="color: #000000">.</span><span style="color: #795E26">pattern</span><span style="color: #000000">(</span><span style="color: #811F3F">/@/</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">email</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Json</span><span style="color: #000000">.</span><span style="color: #795E26">type</span><span style="color: #000000">(</span><span style="color: #267F99">Date</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">createdAt</span><span style="color: #000000"> = </span><span style="color: #0000FF">new</span><span style="color: #000000"> </span><span style="color: #267F99">Date</span><span style="color: #000000">()</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Json</span><span style="color: #000000">.</span><span style="color: #795E26">type</span><span style="color: #000000">(</span><span style="color: #267F99">BigInt</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">amount</span><span style="color: #000000">: </span><span style="color: #267F99">bigint</span>
+<span style="color: #000000">}</span>
+</code></pre>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">User</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;./User&#039;</span>
+<span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">MongoEntityFor</span><span style="color: #000000">, </span><span style="color: #001080">table</span><span style="color: #000000">, </span><span style="color: #001080">index</span><span style="color: #000000">, </span><span style="color: #001080">dbType</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;class-mongo&#039;</span>
+
+
+<span style="color: #000000">@</span><span style="color: #795E26">table</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;users&#039;</span><span style="color: #000000">)</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">class</span><span style="color: #000000"> </span><span style="color: #267F99">UserDb</span><span style="color: #000000"> </span><span style="color: #0000FF">extends</span><span style="color: #000000"> </span><span style="color: #795E26">MongoEntityFor</span><span style="color: #000000">(</span><span style="color: #001080">User</span><span style="color: #000000">) {</span>
+
+<span style="color: #000000">    @</span><span style="color: #795E26">index</span><span style="color: #000000">({ </span><span style="color: #001080">unique:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000"> })</span>
+<span style="color: #000000">    </span><span style="color: #001080">email</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    </span><span style="color: #008000">/*(MongoType, JsType)*/</span>
+<span style="color: #000000">    @</span><span style="color: #795E26">dbType</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;decimal&#039;</span><span style="color: #000000">, </span><span style="color: #267F99">BigInt</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">amount</span><span style="color: #000000">: </span><span style="color: #267F99">bigint</span>
+<span style="color: #000000">}</span>
+
+
+<span style="color: #008000">// e.g</span>
+<span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">user</span><span style="color: #000000"> = </span><span style="color: #0000FF">new</span><span style="color: #000000"> </span><span style="color: #795E26">UserDb</span><span style="color: #000000">({</span>
+<span style="color: #000000">    </span><span style="color: #001080">name:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;Smith&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">    </span><span style="color: #001080">email:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;foo@bar.fake&#039;</span>
+<span style="color: #000000">});</span>
+<span style="color: #AF00DB">await</span><span style="color: #000000"> </span><span style="color: #001080">user</span><span style="color: #000000">.</span><span style="color: #795E26">upsert</span><span style="color: #000000">();</span>
+<span style="color: #001080">console</span><span style="color: #000000">.</span><span style="color: #795E26">log</span><span style="color: #000000">(</span><span style="color: #001080">user</span><span style="color: #000000">.</span><span style="color: #001080">_id</span><span style="color: #000000">);</span>
+</code></pre>
+				<p>Same as a single class:</p>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">Serializable</span><span style="color: #000000">, </span><span style="color: #001080">Json</span><span style="color: #000000">, </span><span style="color: #001080">Rule</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;class-json&#039;</span>
+<span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">MongoEntity</span><span style="color: #000000">, </span><span style="color: #001080">table</span><span style="color: #000000">, </span><span style="color: #001080">index</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;class-mongo&#039;</span>
+
+<span style="color: #000000">@</span><span style="color: #795E26">table</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;users&#039;</span><span style="color: #000000">)</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">class</span><span style="color: #000000"> </span><span style="color: #267F99">User</span><span style="color: #000000"> </span><span style="color: #0000FF">extends</span><span style="color: #000000"> </span><span style="color: #267F99">MongoEntity</span><span style="color: #000000">&lt;</span><span style="color: #267F99">User</span><span style="color: #000000">&gt; {</span>
+<span style="color: #000000">    </span><span style="color: #001080">_id</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #795E26">index</span><span style="color: #000000">({ </span><span style="color: #001080">unique:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000"> })</span>
+<span style="color: #000000">    @</span><span style="color: #001080">Rule</span><span style="color: #000000">.</span><span style="color: #795E26">required</span><span style="color: #000000">()</span>
+<span style="color: #000000">    </span><span style="color: #001080">name</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Rule</span><span style="color: #000000">.</span><span style="color: #795E26">pattern</span><span style="color: #000000">(</span><span style="color: #811F3F">/@/</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">email</span><span style="color: #000000">: </span><span style="color: #267F99">string</span>
+
+<span style="color: #000000">    @</span><span style="color: #001080">Json</span><span style="color: #000000">.</span><span style="color: #795E26">type</span><span style="color: #000000">(</span><span style="color: #267F99">Date</span><span style="color: #000000">)</span>
+<span style="color: #000000">    </span><span style="color: #001080">createdAt</span><span style="color: #000000">: </span><span style="color: #267F99">Date</span>
+<span style="color: #000000">}</span>
+</code></pre>
+				<a href="#9776-api" id="9776-api" style="color: inherit; text-decoration: none;">
+					<h1>&#9776; API</h1>
+				</a>
+				<ul>
+					<li><p><code>1</code> <a href="#1-mongoentity">class MongoEntity</a></p>
+						<ul>
+							<li><p><code>1.01</code> <a href="#101-static-fetch">static fetch</a></p>
+							</li>
+							<li><p><code>1.02</code> <a href="#102-static-fetchmany">static fetchMany</a></p>
+							</li>
+							<li><p><code>1.03</code> <a href="#103-static-count">static count</a></p>
+							</li>
+							<li><p><code>1.04</code> <a href="#104-static-upsert">static upsert</a></p>
+							</li>
+							<li><p><code>1.05</code> <a href="#105-static-upsertmany">static upsertMany</a></p>
+							</li>
+							<li><p><code>1.06</code> <a href="#105-static-upsertmanyby">static upsertManyBy</a></p>
+							</li>
+							<li><p><code>1.07</code> <a href="#106-static-patch">static patch</a></p>
+							</li>
+							<li><p><code>1.08</code> <a href="#107-static-del">static del</a></p>
+							</li>
+							<li><p><code>1.09</code> <a href="#108-static-delmany">static delMany</a></p>
+							</li>
+							<li><p><code>1.10</code> <a href="#109-getcollection">static getCollection</a></p>
+							</li>
+							<li><p><code>1.11</code> <a href="#110-static-getdb">static getDb</a></p>
+							</li>
+							<li><p><code>1.12</code> <a href="#111-upsert">.upsert</a></p>
+							</li>
+							<li><p><code>1.13</code> <a href="#112-patch">.patch</a></p>
+							</li>
+							<li><p><code>1.14</code> <a href="#113-del">.del</a></p>
+							</li>
+						</ul>
+					</li>
+				</ul>
+				<ul>
+					<li><p><code>2</code> <a href="#2-namespace-mongosettings">namespace MongoSettings</a></p>
+						<ul>
+							<li><code>2.1</code> <a href="#21-define">define</a></li>
+							<li><code>2.2</code> <a href="#22-interface-imongosettings">interface IMongoSettings</a><ul>
+									<li><code>2.2.1</code> <a href="#221-connection">connection</a></li>
+									<li><code>2.2.2</code> <a href="#222-db">db</a></li>
+									<li><code>2.2.3</code> <a href="#223-ip">ip</a></li>
+									<li><code>2.2.4</code> <a href="#224-port">port</a></li>
+									<li><code>2.2.5</code> <a href="#225-name">name</a></li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li><p><code>3</code> <a href="#3-namespace-mongoindexes">namespace MongoIndexes</a></p>
+						<ul>
+							<li><code>3.1</code> <a href="#31-ensureall">ensureAll</a></li>
+						</ul>
+					</li>
+					<li><p><code>4</code> <a href="#4-decorators">decorators</a></p>
+						<ul>
+							<li><code>4.1</code> <a href="#41-table">table</a></li>
+							<li><code>4.2</code> <a href="#42-index">index</a></li>
+							<li><code>4.3</code> <a href="#43-dbtype">dbType</a></li>
+						</ul>
+					</li>
+				</ul>
+				<hr>
+				<p>:copyright: MIT - Atma.js</p>
+			</div>
+			<!--{&quot;options&quot;:&quot;D:\\atma\\class-mongo&quot;,&quot;tsconfig&quot;:&quot;D:\\atma\\class-mongo&quot;,&quot;packages&quot;:[],&quot;entryPoints&quot;:[&quot;D:\\atma\\class-mongo\\src\\export.ts&quot;],&quot;exclude&quot;:[],&quot;externalPattern&quot;:[&quot;**/node_modules/**&quot;],&quot;excludeExternals&quot;:false,&quot;excludeNotDocumented&quot;:false,&quot;excludeInternal&quot;:false,&quot;excludePrivate&quot;:false,&quot;excludeProtected&quot;:false,&quot;disableSources&quot;:false,&quot;includes&quot;:&quot;&quot;,&quot;media&quot;:&quot;&quot;,&quot;watch&quot;:false,&quot;preserveWatchOutput&quot;:false,&quot;emit&quot;:false,&quot;out&quot;:&quot;D:\\atma\\class-mongo\\docs&quot;,&quot;json&quot;:&quot;&quot;,&quot;pretty&quot;:true,&quot;theme&quot;:&quot;./node_modules/typedoc-neo-theme/bin/default&quot;,&quot;highlightTheme&quot;:&quot;light-plus&quot;,&quot;name&quot;:&quot;MongoDB class ORM&quot;,&quot;includeVersion&quot;:false,&quot;excludeTags&quot;:[],&quot;readme&quot;:&quot;&quot;,&quot;defaultCategory&quot;:&quot;Other&quot;,&quot;categoryOrder&quot;:[],&quot;categorizeByGroup&quot;:true,&quot;sort&quot;:[&quot;kind&quot;,&quot;instance-first&quot;,&quot;alphabetical&quot;],&quot;gitRevision&quot;:&quot;&quot;,&quot;gitRemote&quot;:&quot;origin&quot;,&quot;gaID&quot;:&quot;&quot;,&quot;gaSite&quot;:&quot;auto&quot;,&quot;hideGenerator&quot;:false,&quot;toc&quot;:[],&quot;disableOutputCheck&quot;:false,&quot;help&quot;:false,&quot;version&quot;:false,&quot;showConfig&quot;:false,&quot;plugin&quot;:[],&quot;logger&quot;:&quot;console&quot;,&quot;logLevel&quot;:1,&quot;treatWarningsAsErrors&quot;:false,&quot;listInvalidSymbolLinks&quot;:false}-->
+		</div>
+		<div class="col-2 col-menu secondary-menu">
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-class tsd-has-type-parameter root">
+						<a href="classes/MongoEntity.html" class="tsd-kind-icon">Mongo<wbr>Entity</a>
+					</li>
+					<li class=" tsd-kind-function root">
+						<a href="modules.html#dbType" class="tsd-kind-icon">db<wbr>Type</a>
+					</li>
+					<li class=" tsd-kind-function root">
+						<a href="modules.html#index" class="tsd-kind-icon">index</a>
+					</li>
+					<li class=" tsd-kind-function root">
+						<a href="modules.html#table" class="tsd-kind-icon">table</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
