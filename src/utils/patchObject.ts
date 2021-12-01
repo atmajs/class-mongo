@@ -21,12 +21,12 @@ export function obj_patch(obj, patch) {
     return obj;
 };
 
-export function obj_partialToUpdateQuery<T = any>(
-    data: MongoLib.UpdateQuery<T> | DeepPartial<T> | Partial<T>
+export function obj_partialToUpdateFilter<T = any>(
+    data: MongoLib.UpdateFilter<T> | DeepPartial<T> | Partial<T>
     , isOptional?: boolean
     , isDeep?: boolean
     , meta?: IMongoMeta
-): MongoLib.UpdateQuery<T> {
+): MongoLib.UpdateFilter<T> {
     if (obj_isPatch(data)) {
         return data;
     }

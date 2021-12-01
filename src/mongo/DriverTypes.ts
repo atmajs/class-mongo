@@ -1,10 +1,10 @@
-import * as MongoLib from 'mongodb';
+import type * as MongoLib from 'mongodb';
 
 /**
  * copy($($0).find('td:first-child').map((i, el) => `${el.textContent}?: any`).toArray().join('\n'))
  */
 
-export type TFindQuery<T = any> = (keyof T) | Partial<T> | MongoLib.FilterQuery<T> | ((x: Partial<T>) => MongoLib.FilterQuery<T>);
+export type TFindQuery<T = any> = (keyof T) | Partial<T> | MongoLib.Filter<T> | ((x: Partial<T>) => MongoLib.Filter<T>);
 
 export type TKeySelector = number | string
 
@@ -271,7 +271,7 @@ export interface IAggrPipeline<T = any> {
     $limit?: any
     $listSessions?: any
     $lookup?: any
-    $match?: Partial<T> | MongoLib.QuerySelector<T>
+    $match?: Partial<T> | MongoLib.Document
     $merge?: any
     $out?: any
     $planCacheStats?: any

@@ -18,9 +18,10 @@ const DefaultServer = {
     port: 27017,
     db: null,
     connection: null,
+    // https://docs.mongodb.com/drivers/node/current/fundamentals/connection/
     params: {
-        auto_reconnect: true,
-        native_parser: true,
+        //auto_reconnect: true,
+        //native_parser: true,
         useUnifiedTopology: true,
         writeConcern: {
             w: 1

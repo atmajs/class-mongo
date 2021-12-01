@@ -1,19 +1,21 @@
+import * as alot from 'alot';
 import { core } from './DriverCore'
 
-var state = false,
+let state = false;
 
     // settins
-    setts_slowLimit = 50,
-    setts_onDetect = null,
-    setts_detector = null,
+let setts_slowLimit = 50;
+let setts_onDetect = null;
+let setts_detector = null;
 
-    box = {
+let box = {
         count: 0,
         slow: [] as IQueryInfo[],
         errors: [] as Error[]
-    },
+    };
+const OriginalKeys = alot.fromObject(core).toArray();
 
-    _core_findSingle = core.findSingle,
+let _core_findSingle = core.findSingle,
     _core_findMany = core.findMany,
     _core_upsertSingle = core.upsertSingle,
     _core_upsertMany = core.upsertMany,
@@ -54,16 +56,23 @@ export function core_profiler_toggle(enable, settings) {
 
     state = enable;
     if (state === false) {
-        core.findSingle = _core_findSingle;
-        core.findMany = _core_findMany;
-        core.upsertSingle = _core_upsertSingle;
-        core.upsertMany = _core_upsertMany;
-        core.updateSingle = _core_updateSingle;
-        core.updateMany = _core_updateMany;
-        core.removeSingle = _core_removeSingle;
-        core.removeMany = _core_removeMany;
-        core.count = _core_count;
+        OriginalKeys.forEach(tuple => core[tuple.key] = tuple.value);
         return;
+    }
+
+    function wrapSync(fnSync): any {
+        return function (...args) {
+            return new Promise((resolve, reject) => {
+                function callback(err, result) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    resolve(result)
+                };
+                fnSync(...args, callback);
+            });
+        };
     }
 
     core.findSingle = function (db, coll, query, options, callback /*<error, item>*/) {
@@ -75,6 +84,8 @@ export function core_profiler_toggle(enable, settings) {
             , wrapOptions(options)
             , analizator(coll, query));
     };
+    core.findSingleAsync = wrapSync(core.findSingle);
+
     core.findMany = function (db, coll, query, options, callback /*<error, array>*/) {
         _core_findMany.apply(null, arguments);
         _core_findMany(
@@ -84,6 +95,8 @@ export function core_profiler_toggle(enable, settings) {
             , options
             , analizator(coll, query));
     };
+    core.findManyAsync = wrapSync(core.findMany);
+
     core.upsertSingle = function (db, coll, query, data, callback/*<error, stats>*/) {
         _core_upsertSingle.apply(null, arguments);
         _core_upsertSingle(
@@ -93,6 +106,9 @@ export function core_profiler_toggle(enable, settings) {
             , data
             , analizator(coll, query));
     };
+    core.upsertSingleAsync = wrapSync(core.upsertSingle);
+
+
     core.upsertMany = function (db, coll, array /*[[query, data]]*/, callback) {
         _core_upsertMany.apply(null, arguments);
         _core_upsertMany(
@@ -101,6 +117,8 @@ export function core_profiler_toggle(enable, settings) {
             , wrapMany(array)
             , analizator(coll, array));
     };
+    core.upsertManyAsync = wrapSync(core.upsertMany);
+
     core.updateSingle = function (db, meta, query, mod, callback /*<error, stats>*/) {
         _core_updateSingle.apply(null, arguments);
         _core_updateSingle(
@@ -110,6 +128,8 @@ export function core_profiler_toggle(enable, settings) {
             , mod
             , analizator(meta, query));
     };
+    core.updateSingleAsync = wrapSync(core.updateSingle);
+
     core.updateMany = function (db, coll, array/*[[query, data]]*/, callback) {
         _core_updateMany.apply(null, arguments);
         _core_updateMany(
@@ -118,6 +138,8 @@ export function core_profiler_toggle(enable, settings) {
             , wrapMany(array)
             , analizator(coll, array));
     };
+    core.updateManyAsync = wrapSync(core.updateMany);
+
     core.removeSingle = function (db, coll, query, callback /*<error, count>*/) {
         _core_removeSingle.apply(null, arguments);
         _core_removeSingle(
@@ -126,6 +148,9 @@ export function core_profiler_toggle(enable, settings) {
             , wrapQuery(query)
             , analizator(coll, query));
     };
+    core.removeSingleAsync = wrapSync(core.removeSingle);
+
+
     core.removeMany = function (db, coll, query, callback /*<error, count>*/) {
         _core_removeMany.apply(null, arguments);
         _core_removeMany(
@@ -134,6 +159,8 @@ export function core_profiler_toggle(enable, settings) {
             , wrapQuery(query)
             , analizator(coll, query));
     };
+    core.removeManyAsync = wrapSync(core.removeMany);
+
     core.count = function (db, coll, query, options, callback/*<error, count>*/) {
         _core_count.apply(null, arguments);
         _core_count(
@@ -143,6 +170,8 @@ export function core_profiler_toggle(enable, settings) {
             , wrapOptions(null)
             , analizator(coll, query));
     };
+    core.countAsync = wrapSync(core.count);
+
 }
 
 function  wrapQuery(query) {

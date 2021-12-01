@@ -20,61 +20,67 @@ declare module 'class-mongo/MongoEntity' {
     import { Statics } from 'atma-utils/mixin'; 
      /// <reference types="atma-utils" />
     import { Serializable } from 'class-json';
-    import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
+    import * as MongoLib from 'mongodb';
+    import type { Filter, UpdateFilter, Collection, Db, UpdateResult, Document } from 'mongodb';
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from 'class-mongo/types/FindOptions';
-    import * as MongoLib from 'mongodb';
     import { DeepPartial } from 'class-mongo/types/DeepPartial';
-    export class MongoEntity<T = any> extends Serializable<T> {
-            _id: string;
-            static fetch<T extends typeof MongoEntity>(this: T, query: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>>;
-            static fetchPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>>;
-            static fetchMany<T extends typeof MongoEntity>(this: T, query?: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<InstanceType<T>[]>;
-            static fetchManyPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>[]>;
-            static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: FilterQuery<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & FindOneOptions): Promise<{
+    export class MongoEntity<T = any> extends Serializable<T> implements IEntity {
+            _id: any;
+            /**
+                * Equivalent to `findOne` method.
+                * @param query [MongoDB fetch query](https://mongodb.github.io/node-mongodb-native/4.0/modules.html#filter)
+                * @param options @see https://mongodb.github.io/node-mongodb-native/4.0/interfaces/findoptions.html
+                * @returns
+                */
+            static fetch<T extends typeof MongoEntity>(this: T, query: Filter<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions): Promise<InstanceType<T>>;
+            static fetchPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: Filter<InstanceType<T>>, options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>>;
+            static fetchMany<T extends typeof MongoEntity>(this: T, query?: Filter<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions): Promise<InstanceType<T>[]>;
+            static fetchManyPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: Filter<InstanceType<T>>, options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<TDeepPickByProjection<InstanceType<T>, P>[]>;
+            static fetchManyPaged<T extends typeof MongoEntity>(this: T, query?: Filter<InstanceType<T>>, options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions): Promise<{
                     collection: InstanceType<T>[];
                     total: number;
             }>;
-            static fetchManyPagedPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: FilterQuery<InstanceType<T>>, options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<{
+            static fetchManyPagedPartial<T extends typeof MongoEntity, P extends TProjection<InstanceType<T>>>(this: T, query: Filter<InstanceType<T>>, options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)): Promise<{
                     collection: TDeepPickByProjection<InstanceType<T>, P>[];
                     total: number;
             }>;
             static aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
                     Type?: Constructor<TOut>;
-            } & MongoLib.CollectionAggregationOptions): Promise<TOut[]>;
+            } & MongoLib.AggregateOptions): Promise<TOut[]>;
             static aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T, pipeline?: IAggrPipeline[], options?: {
                     Type?: Constructor<TOut>;
-            } & MongoLib.CollectionAggregationOptions): Promise<{
+            } & MongoLib.AggregateOptions): Promise<{
                     collection: TOut[];
                     total: number;
             }>;
-            static count<T extends typeof MongoEntity>(query?: FilterQuery<T>): Promise<any>;
+            static count<T extends typeof MongoEntity>(query?: Filter<T>): Promise<number>;
             static upsert<T extends MongoEntity>(instance: T): Promise<T>;
             static upsertBy<T extends MongoEntity>(finder: TFindQuery<T>, instance: T): Promise<T>;
             static upsertMany<T extends MongoEntity>(arr: T[]): Promise<T[]>;
             static upsertManyBy<T extends MongoEntity>(finder: TFindQuery<T>, arr: T[]): Promise<T[]>;
             static del<T extends MongoEntity>(entity: T): Promise<any>;
             static delMany<T extends MongoEntity>(arr: T[]): Promise<any>;
-            static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
-            static patchDeeply<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateQuery<T>): Promise<T>;
-            static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]): Promise<void>;
+            static patch<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateFilter<T>): Promise<T>;
+            static patchDeeply<T extends MongoEntity>(instance: T, patch: Partial<T> | UpdateFilter<T>): Promise<T>;
+            static patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.Filter<T>, DeepPartial<T> | UpdateFilter<T>][]): Promise<MongoLib.BulkWriteResult>;
             /**
                 * Find document by filter query, and patch it.
                 */
-            static patchDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T>): Promise<MongoLib.WriteOpResult>;
-            static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: Partial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
-            static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
-            static patchMultipleDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.FilterQuery<T>, patch: DeepPartial<T> | UpdateQuery<T>): Promise<MongoLib.WriteOpResult>;
+            static patchDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.Filter<T>, patch: DeepPartial<T>): Promise<MongoLib.UpdateResult>;
+            static patchBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.Filter<T>, patch: Partial<T> | UpdateFilter<T>): Promise<MongoLib.UpdateResult>;
+            static patchMultipleBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.Filter<T>, patch: DeepPartial<T> | UpdateFilter<T>): Promise<UpdateResult | Document>;
+            static patchMultipleDeeplyBy<T extends MongoEntity>(this: Constructor<T>, finder: MongoLib.Filter<T>, patch: DeepPartial<T> | UpdateFilter<T>): Promise<UpdateResult | Document>;
             static getCollection(): Promise<Collection>;
             static getDb(server?: string): Promise<Db>;
             upsert(): Promise<this>;
-            del(): Promise<any>;
-            patch<T extends MongoEntity>(this: T, patch: UpdateQuery<T> | DeepPartial<T>, opts: {
+            del(): Promise<MongoLib.DeleteResult>;
+            patch<T extends MongoEntity>(this: T, patch: UpdateFilter<T> | DeepPartial<T>, opts: {
                     deep: true;
             }): Promise<T>;
     }
     export interface IEntity {
-            _id: string;
+            _id: any;
     }
     export type Constructor<T = {}> = {
             new (...args: any[]): T;
@@ -84,7 +90,7 @@ declare module 'class-mongo/MongoEntity' {
 
 declare module 'class-mongo/MongoIndexes' {
     export namespace MongoIndexes {
-        function ensureAll(): Promise<any>;
+        function ensureAll(): Promise<unknown>;
     }
 }
 
@@ -151,6 +157,19 @@ declare module 'class-mongo/MongoProfiler' {
 
 declare module 'class-mongo/MongoBson' {
     export namespace MongoBson {
+        /**
+          * Traverse the object and convert any unsupported type to a mongodb capable type.
+          * It also use `class-json` to serialize an object.
+          * For example, `bigint` to
+          *
+          * - `Decimal128` in case '> MAX_SAFE_INTEGER'
+          * - `number` in case '< MAX_SAFE_INTEGER'
+          * - `string` any other case
+          *
+          * @param mix Object to walk through
+          * @param Type Optionaly the Type Declaration, it could contain Meta data for json serialization.
+          * @returns
+          */
         function fromObject(mix: any, Type?: any): any;
         function toObject<T = any>(bson: any, Type?: new (...args: any[]) => T): T;
     }
@@ -158,9 +177,9 @@ declare module 'class-mongo/MongoBson' {
 
 declare module 'class-mongo/decos' {
     import { IndexOptions, IndexRaw } from 'class-mongo/mongo/Driver';
-    import { IConnectionSettings } from 'class-mongo/types/IConnectionSettings';
+    import { ITableSettings } from 'class-mongo/types/ITableSettings';
     import { TMongoType } from 'class-mongo/types/Types';
-    export function table(name: string, options?: IConnectionSettings): (target: any) => any;
+    export function table(name: string, options?: ITableSettings): (target: any) => any;
     export function index(index: IndexRaw): any;
     export function index(opts?: IndexOptions): any;
     export function index(name: string, opts?: IndexOptions): any;
@@ -177,11 +196,11 @@ declare module 'class-mongo/decos' {
 }
 
 declare module 'class-mongo/mongo/DriverTypes' {
-    import * as MongoLib from 'mongodb';
+    import type * as MongoLib from 'mongodb';
     /**
       * copy($($0).find('td:first-child').map((i, el) => `${el.textContent}?: any`).toArray().join('\n'))
       */
-    export type TFindQuery<T = any> = (keyof T) | Partial<T> | MongoLib.FilterQuery<T> | ((x: Partial<T>) => MongoLib.FilterQuery<T>);
+    export type TFindQuery<T = any> = (keyof T) | Partial<T> | MongoLib.Filter<T> | ((x: Partial<T>) => MongoLib.Filter<T>);
     export type TKeySelector = number | string;
     export interface IAggrArithmeticExp {
         $abs?: TAggrExpression;
@@ -408,7 +427,7 @@ declare module 'class-mongo/mongo/DriverTypes' {
         $limit?: any;
         $listSessions?: any;
         $lookup?: any;
-        $match?: Partial<T> | MongoLib.QuerySelector<T>;
+        $match?: Partial<T> | MongoLib.Document;
         $merge?: any;
         $out?: any;
         $planCacheStats?: any;
@@ -459,6 +478,8 @@ declare module 'class-mongo/mongo/Driver' {
     import { TFindQuery, IAggrPipeline } from 'class-mongo/mongo/DriverTypes';
     import { FindOptions } from 'class-mongo/types/FindOptions';
     import { TDbCollection } from 'class-mongo/types/TDbCollection';
+    import { IEntity } from 'class-mongo/MongoEntity';
+    import type { Callback, UpdateResult, Document } from 'mongodb';
     export type IndexSpecification<T> = string | string[] | Record<keyof T, number>;
     export interface IndexOptions {
         unique?: boolean;
@@ -477,40 +498,67 @@ declare module 'class-mongo/mongo/Driver' {
     export { core_profiler_getData as db_profiler_getData } from 'class-mongo/mongo/DriverProfiler';
     export { core_profiler_toggle as db_profiler_toggle } from 'class-mongo/mongo/DriverProfiler';
     export function db_getCollection(meta: TDbCollection, cb: ICallback<MongoLib.Collection>): void;
-    export function db_resolveCollection(meta: TDbCollection): Promise<any>;
+    export function db_getCollectionAsync(meta: TDbCollection): Promise<MongoLib.Collection>;
     export function db_getDb(server: string, callback: ICallback<MongoLib.Db>): void;
-    export function db_resolveDb(server?: string): Promise<any>;
-    export function db_findSingle<T = any>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, options: FindOptions<T> & MongoLib.FindOneOptions, callback: ICallback<T>): void;
-    export function db_findMany<T = any>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<T[]>): void;
-    export function db_findManyPaged<T = any>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.FindOneOptions, callback: ICallback<{
+    export function db_getDbAsync(server?: string): Promise<MongoLib.Db>;
+    export function db_findSingle<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions, callback: ICallback<T>): void;
+    export function db_findSingleAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions): Promise<MongoLib.WithId<MongoLib.Document>>;
+    export function db_findMany<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.FindOptions, callback: ICallback<T[]>): void;
+    export function db_findManyAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.FindOptions): Promise<T[]>;
+    export function db_findManyPaged<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions, callback: Callback<{
         collection: T[];
         total: number;
     }>): void;
-    export function db_aggregate<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.CollectionAggregationOptions, callback: ICallback<T[]>): void;
-    export function db_count<T = any>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, options: MongoLib.MongoCountPreferences, callback: ICallback<number>): void;
+    export function db_findManyPagedAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions): Promise<{
+        collection: T[];
+        total: number;
+    }>;
+    export function db_aggregate<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.AggregateOptions, callback: Callback<T[]>): void;
+    export function db_aggregateAsync<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.AggregateOptions): Promise<MongoLib.Document[]>;
+    export function db_count<T = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.CountDocumentsOptions, callback: ICallback<number>): void;
+    export function db_countAsync<T = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options?: MongoLib.CountDocumentsOptions): Promise<number>;
     export function db_insert(meta: TDbCollection, data: any, callback: any): void;
     export function db_insertSingle(meta: TDbCollection, data: any, callback: any): void;
+    export function db_insertSingleAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertOneResult<MongoLib.Document>>;
     export function db_insertMany(meta: TDbCollection, data: any, callback: any): void;
+    export function db_insertManyAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertManyResult<MongoLib.Document>>;
     export function db_updateSingle<T extends {
         _id: any;
     }>(meta: TDbCollection, data: T, callback: any): void;
+    export function db_updateSingleAsync<T extends {
+        _id: any;
+    }>(meta: TDbCollection, data: T): Promise<MongoLib.UpdateResult>;
     export function db_updateMany<T extends {
         _id: any;
     }>(meta: TDbCollection, array: T[], callback: any): void;
+    export function db_updateManyAsync<T extends {
+        _id: any;
+    }>(meta: TDbCollection, array: T[]): Promise<MongoLib.BulkWriteResult>;
     export function db_updateManyBy<T extends {
         _id: any;
     }>(meta: TDbCollection, finder: TFindQuery<T>, array: T[], callback: any): void;
     export function db_upsertManyBy<T extends {
         _id: any;
     }>(meta: TDbCollection, finder: TFindQuery<T>, array: T[], callback: any): void;
+    export function db_upsertManyByAsync<T extends {
+        _id: any;
+    }>(meta: TDbCollection, finder: TFindQuery<T>, array: T[]): Promise<MongoLib.BulkWriteResult>;
     export function db_upsertSingleBy<T extends {
         _id: any;
     }>(meta: TDbCollection, finder: TFindQuery<T>, x: T, callback: any): void;
-    export function db_patchSingle<T>(meta: TDbCollection, id: any, patch: MongoLib.UpdateQuery<T>, callback: any): void;
-    export function db_patchSingleBy<T>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
-    export function db_patchMultipleBy<T>(meta: TDbCollection, query: MongoLib.FilterQuery<T>, patch: MongoLib.UpdateQuery<T>, callback: any): void;
-    export function db_patchMany<T>(meta: TDbCollection, arr: [MongoLib.FilterQuery<T>, Partial<T> | MongoLib.UpdateQuery<T>][], callback: any): void;
+    export function db_upsertSingleByAsync<T extends {
+        _id: any;
+    }>(meta: TDbCollection, finder: TFindQuery<T>, x: T): Promise<MongoLib.UpdateResult>;
+    export function db_patchSingle<T extends IEntity>(meta: TDbCollection, id: any, patch: MongoLib.UpdateFilter<T>, callback: any): void;
+    export function db_patchSingleAsync<T extends IEntity>(meta: TDbCollection, id: any, patch: MongoLib.UpdateFilter<T>): Promise<MongoLib.UpdateResult>;
+    export function db_patchSingleBy<T extends IEntity>(meta: TDbCollection, query: MongoLib.Filter<T>, patch: MongoLib.UpdateFilter<T>, callback: any): void;
+    export function db_patchSingleByAsync<T extends IEntity>(meta: TDbCollection, query: MongoLib.Filter<T>, patch: MongoLib.UpdateFilter<T>): Promise<MongoLib.UpdateResult>;
+    export function db_patchMultipleBy<T extends IEntity>(meta: TDbCollection, query: MongoLib.Filter<T>, patch: MongoLib.UpdateFilter<T>, callback: any): void;
+    export function db_patchMultipleByAsync<T extends IEntity>(meta: TDbCollection, query: MongoLib.Filter<T>, patch: MongoLib.UpdateFilter<T>): Promise<UpdateResult | Document>;
+    export function db_patchMany<T extends IEntity>(meta: TDbCollection, arr: [MongoLib.Filter<T>, Partial<T> | MongoLib.UpdateFilter<T>][], callback: any): void;
+    export function db_patchManyAsync<T extends IEntity>(meta: TDbCollection, arr: [MongoLib.Filter<T>, Partial<T> | MongoLib.UpdateFilter<T>][]): Promise<MongoLib.BulkWriteResult>;
     export function db_remove(meta: TDbCollection, query: any, isSingle: any, callback: any): void;
+    export function db_removeAsync(meta: TDbCollection, query: any, isSingle: any): Promise<MongoLib.DeleteResult>;
     export function db_ensureIndexes(meta: TDbCollection, indexes: IndexRaw[], callback: any): void;
     export function db_getMongo(): typeof MongoLib;
 }
@@ -540,10 +588,12 @@ declare module 'class-mongo/mongo/DriverProfiler' {
     export function core_profiler_toggle(enable: any, settings: any): void;
 }
 
-declare module 'class-mongo/types/IConnectionSettings' {
-    export interface IConnectionSettings {
+declare module 'class-mongo/types/ITableSettings' {
+    import type { CreateCollectionOptions } from 'mongodb';
+    export interface ITableSettings {
         /** Server name, when not set, `default` is used */
         server?: string;
+        collection?: CreateCollectionOptions;
     }
 }
 
@@ -556,6 +606,11 @@ declare module 'class-mongo/types/Types' {
         };
     }
     export type TMongoType = typeof Types.Decimal128 | 'decimal';
+    export type TCallback<TResult> = (error: any, result: TResult) => void;
+    export type TFnWithCallback<TArgs extends any[], TResult> = (...args: [...TArgs, TCallback<TResult>]) => void;
+    export type TFnWithCallbackArgs<T> = T extends TFnWithCallback<infer TArgs, any> ? TArgs : never;
+    export type THead<T extends any[]> = T extends [...infer Head, any] ? Head : any[];
+    export type TLast<T extends any[]> = T extends [...any[], infer Last] ? Last : never;
 }
 
 declare module 'class-mongo/ICallback' {

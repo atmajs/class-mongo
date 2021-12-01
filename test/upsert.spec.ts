@@ -57,7 +57,7 @@ UTest({
 
         let result = await User.upsertManyBy('email', users);
         eq_(result.length, 2);
-        notEq_(result[0]._id, null);
+        notEq_(result[0]._id, null, 'ID not set');
 
         let foo = await User.fetch({ email: 'foo@foo.fake'});
         deepEq_(foo, result[0]);
@@ -69,7 +69,7 @@ UTest({
         await User.upsertManyBy('email', update);
         let foo1 = await User.fetch({ email: 'foo@foo.fake'});
         deepEq_(foo1.name, 'Foo1');
-        notEq_(foo1._id, null);
+        notEq_(foo1._id, null, 'ID not set');
     },
     async 'update multiple' () {
         let users = await User.fetchMany();

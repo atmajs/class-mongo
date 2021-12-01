@@ -1,10 +1,11 @@
-import { Db, FindOneOptions, FilterQuery, UpdateQuery, WriteOpResult, MongoCallback, UpdateWriteOpResult } from 'mongodb'
+import type { Db, Filter, FindOptions, Callback, WithId, Document, UpdateResult, UpdateFilter, DeleteResult, BulkWriteResult } from 'mongodb'
 import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
 import { IAggrPipeline } from './DriverTypes';
 
 import * as MongoLib from 'mongodb';
-import { obj_partialToUpdateQuery } from '../utils/patchObject';
+import { obj_partialToUpdateFilter } from '../utils/patchObject';
 import { TDbCollection } from '../types/TDbCollection';
+import { IEntity } from '../MongoEntity';
 
 
 export namespace core {
@@ -22,12 +23,12 @@ export namespace core {
         return mongoLib ?? (mongoLib = require('mongodb'));
     };
 
-    export function findSingle<T = any>(
+    export function findSingle<T extends IEntity = any>(
         db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , options: FindOneOptions
-        , callback: MongoCallback<T | null> /*<error, item>*/) {
+        , query: Filter<T>
+        , options: FindOptions
+        , callback: Callback<T | null> /*<error, item>*/) {
 
         let c = db.collection(coll);
         if (options == null) {
@@ -35,26 +36,48 @@ export namespace core {
         }
         c.findOne(query, options, callback);
     };
-
-    export function findMany<T = any[]>(db: MongoLib.Db
+    export function findSingleAsync<T extends IEntity = any>(
+        db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , options: FindOneOptions
-        , callback: MongoCallback<T[]> /*<error, array>*/) {
+        , query: Filter<T>
+        , options: FindOptions
+    ) {
+        return db.collection(coll).findOne(query, options ?? {});
+    };
+
+
+    export function findMany<T extends IEntity = any>(
+        db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        , options: FindOptions
+        , callback: Callback<T[]> /*<error, array>*/) {
 
         let c = db.collection(coll);
         let cursor = c.find(query, options);
         cursor.toArray(callback);
     };
-    export function findManyPaged<T = any[]>(db: MongoLib.Db
+    export async function findManyAsync<T extends IEntity = any>(
+        db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , options: FindOneOptions
-        , callback: MongoCallback<{ collection: T[], total: number }>) {
+        , query: Filter<T>
+        , options: FindOptions
+        ):  Promise<T[]> {
 
         let c = db.collection(coll);
         let cursor = c.find(query, options);
-        cursor.count(false, (error, total) => {
+        let arr = await cursor.toArray();
+        return <T[]> arr;
+    };
+    export function findManyPaged<T extends IEntity = any>(db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        , options: FindOptions
+        , callback: Callback<{ collection: T[], total: number }>) {
+
+        let c = db.collection(coll);
+        let cursor = c.find(query, options);
+        cursor.count((error, total) => {
             if (error) {
                 callback(error, null);
                 return;
@@ -65,47 +88,86 @@ export namespace core {
                     return;
                 }
                 callback(null, {
-                    collection: arr,
+                    collection: <T[]> arr,
                     total
                 })
             });
         })
-
+    };
+    export async function findManyPagedAsync<T extends IEntity = any>(db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        , options: FindOptions
+    ): Promise<{ collection: T[], total: number }> {
+        let c = db.collection(coll);
+        let cursor = c.find(query, options);
+        let [total, arr] = await Promise.all([
+            cursor.count({
+                limit: null,
+                skip: null,
+            }),
+            cursor.toArray(),
+        ]);
+        return {
+            collection: <T[]> arr,
+            total
+        };
     };
 
     export function aggregate<T = any[]>(db: MongoLib.Db
         , coll: string
         , pipeline: IAggrPipeline[]
-        , options: MongoLib.CollectionAggregationOptions
-        , callback: MongoCallback<T[]> /*<error, array>*/) {
+        , options: MongoLib.AggregateOptions
+        , callback: Callback<T[]> /*<error, array>*/) {
 
         let c = db.collection(coll);
         let cursor = c.aggregate(pipeline, options);
         cursor.toArray(callback);
     };
+    export function aggregateAsync<T = any[]>(db: MongoLib.Db
+        , coll: string
+        , pipeline: IAggrPipeline[]
+        , options: MongoLib.AggregateOptions) {
+
+        return db
+            .collection(coll)
+            .aggregate(pipeline, options)
+            .toArray();
+    };
 
     export function upsertSingle<T = any>(db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , data: UpdateQuery<T> | Partial<T>
-        , callback: MongoCallback<UpdateWriteOpResult>) {
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>
+        , callback: Callback<UpdateResult>) {
 
-        let update = obj_partialToUpdateQuery(data);
+        let update = obj_partialToUpdateFilter(data);
 
         db
             .collection(coll)
             .updateOne(query, update, opt_upsertSingle, callback);
     };
+    export function upsertSingleAsync<T = any>(
+        db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>) {
+
+        let update = obj_partialToUpdateFilter(data);
+        return db
+            .collection(coll)
+            .updateOne(query, update, opt_upsertSingle);
+    };
     export function upsertMany<T extends { _id: any } >(db: MongoLib.Db
         , meta: TDbCollection
-        , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
-        , callback: MongoCallback<MongoLib.BulkWriteResult>) {
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[] /*[[query, data]]*/
+        , callback: Callback<MongoLib.BulkWriteResult>) {
 
             let ops = array.map(op => {
                 return {
                     updateOne: {
                         filter: op[0],
-                        update: obj_partialToUpdateQuery<any>(op[1], null, null, meta),
+                        update: obj_partialToUpdateFilter<any>(op[1], null, null, meta),
                         upsert: true
                     }
                 }
@@ -132,15 +194,44 @@ export namespace core {
                 callback(err, result);
             });
     };
+    export async function upsertManyAsync<T extends { _id: any } >(db: MongoLib.Db
+        , meta: TDbCollection
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[]
+        ): Promise<MongoLib.BulkWriteResult> {
+
+            let ops = array.map(op => {
+                return {
+                    updateOne: {
+                        filter: op[0],
+                        update: obj_partialToUpdateFilter<any>(op[1], null, null, meta),
+                        upsert: true
+                    }
+                }
+            });
+            let result = await bulkWriteAsync(db, meta.collection, ops)
+            /** when updates of existed documents occures there will be no _id field */
+            let upserted = result.getUpsertedIds();
+            for (let i = 0; i < upserted.length; i++) {
+                let { index, _id } = upserted[i];
+
+                let x: any = array[index][1];
+                if (x._id == null) {
+                    x._id = _id;
+                } else if (String(x._id) !== String(upserted[i])) {
+                    throw new Error(`Unexpected missmatch: ${x._id} != ${upserted[i]}`);
+                }
+            }
+            return result;
+    };
     export function patchMany<T extends { _id: any } >(db: MongoLib.Db
         , meta: TDbCollection
-        , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
-        , callback: MongoCallback<MongoLib.BulkWriteResult>) {
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[] /*[[query, data]]*/
+        , callback: Callback<MongoLib.BulkWriteResult>) {
 
             let ops = array
                 .map(op => {
                     let [ filter, data ] = op;
-                    let patch = obj_partialToUpdateQuery(data, true, null, meta);
+                    let patch = obj_partialToUpdateFilter(data, true, null, meta);
                     if (patch == null) {
                         return null;
                     }
@@ -173,16 +264,52 @@ export namespace core {
                 callback(null, result);
             });
     };
+    export async function patchManyAsync<T extends { _id: any } >(db: MongoLib.Db
+        , meta: TDbCollection
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[] /*[[query, data]]*/
+        ): Promise<MongoLib.BulkWriteResult> {
+
+        let ops = array
+            .map(op => {
+                let [ filter, data ] = op;
+                let patch = obj_partialToUpdateFilter(data, true, null, meta);
+                if (patch == null) {
+                    return null;
+                }
+                return {
+                    updateOne: {
+                        filter: filter,
+                        update: patch,
+                        upsert: false
+                    }
+                }
+            })
+            .filter(x => x != null);
+
+        if (ops.length === 0) {
+            return <MongoLib.BulkWriteResult> <any> {
+                ok: true,
+                nInserted: 0,
+                nModified: 0,
+                nMatched: 0,
+                nRemoved: 0,
+                nUpserted: 0,
+            };
+        }
+        let result: MongoLib.BulkWriteResult = await bulkWriteAsync (db, meta.collection, ops);
+        return result;
+
+    };
 
     export function updateSingle<T = any>(db: MongoLib.Db
         , meta: TDbCollection
-        , query: FilterQuery<T>
-        , data: UpdateQuery<T> | Partial<T>
-        , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>
+        , callback: Callback<MongoLib.UpdateResult> /*<error, stats>*/) {
 
-        let update = obj_partialToUpdateQuery(data, true, null, meta);
+        let update = obj_partialToUpdateFilter(data, true, null, meta);
         if (update == null) {
-            callback(null, <MongoLib.UpdateWriteOpResult> <any> {
+            callback(null, <MongoLib.UpdateResult> <any> {
                 result: {
                     ok: true,
                     n: 0,
@@ -195,15 +322,35 @@ export namespace core {
             .collection(meta.collection)
             .updateOne(query, update, opt_updateSingle, callback);
     };
+    export async function updateSingleAsync<T = any>(db: MongoLib.Db
+        , meta: TDbCollection
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>
+        ): Promise<MongoLib.UpdateResult> {
+
+        let update = obj_partialToUpdateFilter(data, true, null, meta);
+        if (update == null) {
+            return <MongoLib.UpdateResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            };
+        }
+        return db
+            .collection(meta.collection)
+            .updateOne(query, update, opt_updateSingle);
+    };
     export function updateMultiple<T = any>(db: MongoLib.Db
         , meta: TDbCollection
-        , query: FilterQuery<T>
-        , data: UpdateQuery<T> | Partial<T>
-        , callback: MongoCallback<MongoLib.UpdateWriteOpResult> /*<error, stats>*/) {
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>
+        , callback: Callback<MongoLib.UpdateResult> /*<error, stats>*/) {
 
-        let update = obj_partialToUpdateQuery(data, true, null, meta);
+        let update = obj_partialToUpdateFilter(data, true, null, meta);
         if (update == null) {
-            callback(null, <MongoLib.UpdateWriteOpResult> <any> {
+            callback(null, <MongoLib.UpdateResult> <any> {
                 result: {
                     ok: true,
                     n: 0,
@@ -216,16 +363,36 @@ export namespace core {
             .collection(meta.collection)
             .updateMany(query, update, opt_updateMultiple, callback);
     };
-
-    export function updateMany<T = any>(db: MongoLib.Db
+    export async function updateMultipleAsync<T extends IEntity = any>(db: MongoLib.Db
         , meta: TDbCollection
-        , array: ([FilterQuery<T>, UpdateQuery<T> | Partial<T>])[] /*[[query, data]]*/
-        , callback: MongoCallback<WriteOpResult>) {
+        , query: Filter<T>
+        , data: UpdateFilter<T> | Partial<T>
+    ): Promise<UpdateResult | Document> {
+
+        let update = obj_partialToUpdateFilter(data, true, null, meta);
+        if (update == null) {
+            return <UpdateResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            };
+        }
+        return db
+            .collection(meta.collection)
+            .updateMany(query, update, opt_updateMultiple);
+    };
+
+    export function updateMany<T extends IEntity = any>(db: MongoLib.Db
+        , meta: TDbCollection
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[] /*[[query, data]]*/
+        , callback: Callback<BulkWriteResult>) {
 
         let ops = array
             .map(op => {
                 let [ filter, data ] = op;
-                let patch = obj_partialToUpdateQuery(data, true, null, meta);
+                let patch = obj_partialToUpdateFilter(data, true, null, meta);
                 if (patch == null) {
                     return null;
                 }
@@ -239,7 +406,7 @@ export namespace core {
             })
             .filter(x => x != null);
         if (ops.length === 0) {
-            callback(null, <MongoLib.WriteOpResult> <any> {
+            callback(null, <MongoLib.BulkWriteResult> <any> {
                 result: {
                     ok: true,
                     n: 0,
@@ -250,44 +417,111 @@ export namespace core {
         }
         bulkWrite(db, meta.collection, ops, callback);
     };
+    export async function updateManyAsync<T extends IEntity = any>(db: MongoLib.Db
+        , meta: TDbCollection
+        , array: ([Filter<T>, UpdateFilter<T> | Partial<T>])[]
+        ): Promise<BulkWriteResult> {
 
-    export function removeSingle<T = any>(db: MongoLib.Db
+        let ops = array
+            .map(op => {
+                let [ filter, data ] = op;
+                let patch = obj_partialToUpdateFilter(data, true, null, meta);
+                if (patch == null) {
+                    return null;
+                }
+                return {
+                    updateOne: {
+                        filter: filter,
+                        update: patch,
+                        upsert: false
+                    }
+                };
+            })
+            .filter(x => x != null);
+        if (ops.length === 0) {
+            return <MongoLib.BulkWriteResult> <any> {
+                result: {
+                    ok: true,
+                    n: 0,
+                    nModified: 0,
+                },
+            };
+        }
+        return bulkWriteAsync(db, meta.collection, ops);
+    };
+
+    export function removeSingle<T = any>(
+        db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , callback: MongoCallback<WriteOpResult> /*<error, count>*/) {
-
+        , query: Filter<T>
+        , callback: Callback<DeleteResult> /*<error, count>*/) {
         db
             .collection(coll)
             .deleteOne(query, callback);
     };
+    export async function removeSingleAsync<T = any>(
+        db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+    ): Promise<DeleteResult> {
+        return db
+            .collection(coll)
+            .deleteOne(query);
+    };
     export function removeMany<T = any>(db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , callback: MongoCallback<WriteOpResult> /*<error, count>*/) {
+        , query: Filter<T>
+        , callback: Callback<DeleteResult> /*<error, count>*/) {
 
         db
             .collection(coll)
             .deleteMany(query, callback);
     };
+    export function removeManyAsync<T = any>(
+        db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        ): Promise <DeleteResult>  {
+        return db
+            .collection(coll)
+            .deleteMany(query);
+    };
 
     export function count<T = any>(db: MongoLib.Db
         , coll: string
-        , query: FilterQuery<T>
-        , options: MongoLib.MongoCountPreferences
-        , callback: MongoCallback<number>/*<error, count>*/) {
+        , query: Filter<T>
+        , options: MongoLib.CountDocumentsOptions
+        , callback: Callback<number>/*<error, count>*/) {
 
         db
             .collection(coll)
             .countDocuments(query, options, callback);
     }
+    export function countAsync<T = any>(db: MongoLib.Db
+        , coll: string
+        , query: Filter<T>
+        , options: MongoLib.CountDocumentsOptions
+    ): Promise<number> {
+        return db
+            .collection(coll)
+            .countDocuments(query, options);
+    }
 
 
     export function bulkWrite <T extends { _id: any }>(db: MongoLib.Db
         , coll: string
-        , operations: MongoLib.BulkWriteOperation<T>[]
-        , callback) {
+        , operations: MongoLib.AnyBulkWriteOperation<T>[]
+        , callback: MongoLib.Callback<MongoLib.BulkWriteResult>) {
 
         db.collection(coll).bulkWrite(operations, callback);
+    };
+
+    export function bulkWriteAsync <T extends { _id: any }>(
+        db: MongoLib.Db
+        , coll: string
+        , operations: MongoLib.AnyBulkWriteOperation<T>[]) {
+
+        return db.collection(coll).bulkWrite(operations);
     };
 }
 

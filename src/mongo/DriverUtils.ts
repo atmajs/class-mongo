@@ -1,24 +1,24 @@
 import { TFindQuery } from './DriverTypes';
 import { core } from './DriverCore';
-import * as MongoLib from 'mongodb';
+import type * as MongoLib from 'mongodb';
 
 
 export namespace DriverUtils {
-    export function getFindQuery <T extends { _id: any }> (finder: TFindQuery<T>, x: Partial<T>): MongoLib.FilterQuery<T> {
+    export function getFindQuery <T extends { _id: any }> (finder: TFindQuery<T>, x: Partial<T>): MongoLib.Filter<T> {
         if (typeof finder === 'string') {
             if (finder === '_id') {
                 return {
                     _id: ensureObjectID(x._id)
                 };
             }
-            return <MongoLib.FilterQuery<T>> {
+            return <MongoLib.Filter<T>> {
                 [finder]: x[finder]
             };
         }
         if (typeof finder === 'function') {
             return finder(x);
         }
-        return <MongoLib.FilterQuery<T>> finder;
+        return <MongoLib.Filter<T>> finder;
     }
 
 

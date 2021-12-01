@@ -2,6 +2,7 @@
 import * as MongoLib from 'mongodb';
 
 
+
 export namespace Types {
     export function Decimal128 (val: number | bigint | string | MongoLib.Decimal128) {
         switch (typeof val) {
@@ -31,3 +32,9 @@ export namespace Types {
 }
 
 export type TMongoType = typeof Types.Decimal128 | 'decimal';
+
+export type TCallback<TResult> = (error, result: TResult) => void
+export type TFnWithCallback<TArgs extends any[], TResult> = (...args: [...TArgs, TCallback<TResult>]) => void
+export type TFnWithCallbackArgs<T> = T extends TFnWithCallback<infer TArgs, any> ? TArgs : never;
+export type THead<T extends any[]> = T extends [ ...infer Head, any ] ? Head : any[];
+export type TLast<T extends any[]> = T extends [ ...any[], infer Last ] ? Last : never;

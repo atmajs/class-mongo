@@ -57,33 +57,41 @@ UTest({
         is_(user._id, 'Object');
     },
 
-    async 'read'(done) {
+    async 'read'() {
+        // $query was deprecated
+        // let byTopQuery = await User.fetch({ $query: { username: 'foo' } });
+        // eq_(byTopQuery.timestamp, timestamp);
 
         let x = await User.fetch({ username: 'foo' })
-
         eq_(x.timestamp, timestamp);
 
-        x = await User.fetch({ $query: { username: 'foo' } });
-
-        eq_(x.timestamp, timestamp);
-
-        x = await User.fetch({ timestamp: timestamp });
-        eq_(x.username, 'foo');
+        let byNumber = await User.fetch({ timestamp: timestamp });
+        eq_(byNumber.username, 'foo');
     },
     async 'find-gt'() {
-        let x = await User.fetch({ timestamp: `>${timestamp - 20}` });
+        let x = await User.fetch({
+            timestamp: {
+                $gt: timestamp - 20
+            }
+        });
         is_(x._id, 'Object');
         eq_(x.username, 'foo');
     },
     async 'find-gte'() {
-        let x = await User.fetch({ timestamp: `>=${timestamp}` });
+        let x = await User.fetch({
+            timestamp: {
+                $gte: timestamp
+            }
+        });
 
         is_(x._id, 'Object');
         eq_(x.username, 'foo');
 
     },
     async 'find-none-gt'() {
-        let user = await User.fetch({ timestamp: '>' + (timestamp + 20) })
+        let user = await User.fetch({
+            timestamp: { $gt: timestamp + 20 }
+        });
         eq_(user, null);
     },
     async 'count'() {
@@ -110,7 +118,7 @@ UTest({
         }
         await User.upsertMany(users);
 
-        users = await User.fetchMany({ timestamp: '>=150' });
+        users = await User.fetchMany({ timestamp: { $gte: 150 } });
         eq_(users.length, 150);
         is_(users[0]._id, 'Object');
 
@@ -125,7 +133,7 @@ UTest({
             }
         });
         eq_(paged.total, 150);
-        eq_(paged.collection.length, 2);
+        eq_(paged.collection.length, 2, 'expected only 2 elements');
         eq_(paged.collection[0].timestamp, 150);
     },
 
@@ -175,7 +183,8 @@ UTest({
                 timestamp: 3
             }
         });
-        eq_(x.result.ok, 1);
+        eq_(x.acknowledged, true);
+        eq_(x.modifiedCount, 1);
     },
 
     'profiler' (done) {

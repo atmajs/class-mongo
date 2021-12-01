@@ -80,7 +80,6 @@ UTest({
 
         deepEq_(out, [{ "_id" : null, "count" : 5 }]);
 
-
         let paged = await Doc.aggregateManyPaged([
             { $match: { score: { $gte: 60 } }},
             { $sort: { score: 1 }},

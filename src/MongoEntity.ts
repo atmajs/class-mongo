@@ -18,22 +18,41 @@ import {
     db_patchSingleBy,
     db_findManyPaged,
     db_patchMany,
-    db_patchMultipleBy
+    db_patchMultipleBy,
+    db_findManyPagedAsync,
+    db_findManyAsync,
+    db_removeAsync,
+    db_insertSingleAsync,
+    db_updateSingleAsync,
+    db_findSingleAsync,
+    db_aggregateAsync,
+    db_patchManyAsync,
+    db_countAsync,
+    db_patchSingleAsync,
+    db_patchMultipleByAsync,
+    db_getCollectionAsync,
+    db_getDbAsync,
+    db_upsertSingleByAsync,
+    db_insertManyAsync,
+    db_updateManyAsync,
+    db_upsertManyByAsync
 } from './mongo/Driver';
 
 import { MongoMeta } from './MongoMeta';
-import { FilterQuery, UpdateQuery, Collection, Db, FindOneOptions } from 'mongodb';
+import * as MongoLib from 'mongodb';
+import type { Filter, UpdateFilter, Collection, Db, InsertOneResult, ObjectId, UpdateResult, Document } from 'mongodb';
+
 import { mixin, is_Array, class_Dfr } from 'atma-utils'
 import { cb_toPromise, cb_createListener } from './mongo/utils';
-import { obj_patch, obj_partialToUpdateQuery } from './utils/patchObject';
+import { obj_patch, obj_partialToUpdateFilter } from './utils/patchObject';
 import { TFindQuery, IAggrPipeline } from './mongo/DriverTypes';
 import { FindOptions, FindOptionsProjected, TProjection, TDeepPickByProjection } from './types/FindOptions';
 
-import * as MongoLib from 'mongodb';
 import { ProjectionUtil } from './utils/projection';
 import { DeepPartial } from './types/DeepPartial';
 import { TDbCollection } from './types/TDbCollection';
 import { bson_fromObject, bson_toEntity } from './utils/bson';
+import { TFnWithCallbackArgs } from './types/Types';
 
 // type PickProjection<T, K extends keyof T> = {
 //     [P in K]:
@@ -42,9 +61,9 @@ import { bson_fromObject, bson_toEntity } from './utils/bson';
 //         : (T[P] extends object ? PickProjection<T[P], keyof T[P]> : T[P])
 // };
 
-export class MongoEntity<T = any> extends Serializable<T> {
+export class MongoEntity<T = any> extends Serializable<T> implements IEntity {
 
-    _id: string
+    _id: any
 
     /**
      * Equivalent to `findOne` method.
@@ -53,92 +72,85 @@ export class MongoEntity<T = any> extends Serializable<T> {
      * @returns
      */
     static async fetch<T extends typeof MongoEntity>(this: T
-        , query: FilterQuery<InstanceType<T>>
-        , options?: FindOptions<InstanceType<T>> & FindOneOptions
+        , query: Filter<InstanceType<T>>
+        , options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions
     ): Promise<InstanceType<T>> {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_findSingle, coll, query, options).then(dbJson => {
-            if (dbJson == null) {
-                return null;
-            }
-            return bson_toEntity(dbJson, this);
-            //return JsonConvert.fromJSON<InstanceType<T>>(json, { Type: this });
-        });
+        let dbJson = await db_findSingleAsync(coll, query, options);
+        if (dbJson == null) {
+            return null;
+        }
+        return bson_toEntity(dbJson, this);
+        //return JsonConvert.fromJSON<InstanceType<T>>(json, { Type: this });
     }
     static async fetchPartial<
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<InstanceType<T>>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+        , query: Filter<InstanceType<T>>
+        , options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<TDeepPickByProjection<InstanceType<T>, P>> {
-        return <any> this.fetch(query, <any> ProjectionUtil.handleOpts(options));
+        return <any> this.fetch(query, ProjectionUtil.handleOpts(options));
     }
 
     static async fetchMany<T extends typeof MongoEntity>(this: T
-        , query?: FilterQuery<InstanceType<T>>
-        , options?: FindOptions<InstanceType<T>> & FindOneOptions
+        , query?: Filter<InstanceType<T>>
+        , options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions
     ): Promise<InstanceType<T>[]> {
-        let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_findMany, coll, query, options).then(arr => {
-            if (arr == null) {
-                return null;
-            }
-            return arr.map(dbJson => bson_toEntity(dbJson, this));
-            //return JsonConvert.fromJSON<InstanceType<T>[]>(arr, { Type: this });
-        });
+        let meta = MongoMeta.getCollection(this);
+        let arr = await db_findManyAsync(meta, query, options);
+        if (arr == null) {
+            return null;
+        }
+        return arr.map(dbJson => bson_toEntity(dbJson, this));
     }
     static async fetchManyPartial<
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<InstanceType<T>>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+        , query: Filter<InstanceType<T>>
+        , options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<TDeepPickByProjection<InstanceType<T>, P>[]> {
         return <any> this.fetchMany(query, <any> ProjectionUtil.handleOpts(options));
     }
 
     static async fetchManyPaged<T extends typeof MongoEntity>(this: T
-        , query?: FilterQuery<InstanceType<T>>
-        , options?: FindOptions<InstanceType<T>> & FindOneOptions
+        , query?: Filter<InstanceType<T>>
+        , options?: FindOptions<InstanceType<T>> & MongoLib.FindOptions
     ): Promise<{ collection: InstanceType<T>[], total: number }> {
+
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_findManyPaged, coll, query, options).then(result => {
-            let arr = result.collection;
-            if (arr != null) {
-                arr = arr.map(dbJson => bson_toEntity(dbJson, this));
-            }
-            return {
-                collection: arr, //JsonConvert.fromJSON<InstanceType<T>[]>(result.collection, { Type: this }),
-                total: result.total
-            };
-        });
+        let { collection, total } = await db_findManyPagedAsync(coll, query, options);
+        if (collection != null) {
+            collection = collection.map(dbJson => bson_toEntity(dbJson, this));
+        }
+        return {
+            collection,
+            total
+        };
     }
     static async fetchManyPagedPartial<
         T extends typeof MongoEntity,
         P extends TProjection<InstanceType<T>>
     >(this: T
-        , query: FilterQuery<InstanceType<T>>
-        , options: (Omit<FindOneOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
+        , query: Filter<InstanceType<T>>
+        , options: (Omit<MongoLib.FindOptions, 'projection'> & FindOptionsProjected<InstanceType<T>, P>)
     ): Promise<{ collection: TDeepPickByProjection<InstanceType<T>, P>[], total: number }> {
         return <any> this.fetchManyPaged(query, <any> ProjectionUtil.handleOpts(options));
     }
 
-    static async aggregateMany<TOut = any, T extends typeof MongoEntity = any>(this: T
+    static async aggregateMany<TOut = any, T extends typeof MongoEntity = any>(
+        this: T
         , pipeline?: IAggrPipeline[]
-        , options?: { Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+        , options?: { Type?: Constructor<TOut> } & MongoLib.AggregateOptions
     ): Promise<TOut[]> {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_aggregate, coll, pipeline, options).then(arr => {
-            if (arr != null) {
-                arr = arr.map(dbJson => bson_toEntity(dbJson, options?.Type ?? this));
-            }
-            return arr;//JsonConvert.fromJSON<TOut[]>(arr, { Type: options?.Type });
-        });
+        let arr = await db_aggregateAsync(coll, pipeline, options);
+        return arr?.map(dbJson => bson_toEntity(dbJson, options?.Type ?? this));
     }
     static async aggregateManyPaged<TOut = any, T extends typeof MongoEntity = any>(this: T
         , pipeline?: IAggrPipeline[]
-        , options?: { Type?: Constructor<TOut> } & MongoLib.CollectionAggregationOptions
+        , options?: { Type?: Constructor<TOut> } & MongoLib.AggregateOptions
     ): Promise<{ collection: TOut[], total: number }> {
         let coll = MongoMeta.getCollection(this);
         let countPipeline = [];
@@ -151,28 +163,27 @@ export class MongoEntity<T = any> extends Serializable<T> {
         }
         countPipeline.push({ $count: 'count' });
 
-        let $facet = <any> {
+        let $facet = [{
             $facet: {
                 collection: pipeline,
                 total: countPipeline
             }
+        }];
+        let resArr = await db_aggregateAsync(coll, $facet, options);
+        let doc = resArr[0];
+        let arr = doc.collection;
+        if (arr != null) {
+            arr = arr.map(dbJson => bson_toEntity(dbJson, options?.Type  ?? this));
+        }
+        return {
+            collection: arr, //JsonConvert.fromJSON<TOut[]>(doc.collection, { Type: options?.Type }),
+            total: doc.total[0]?.count ?? 0
         };
-        return cb_toPromise(db_aggregate, coll, $facet, options).then(resArr => {
-            let doc = resArr[0];
-            let arr = doc.collection;
-            if (arr != null) {
-                arr = arr.map(dbJson => bson_toEntity(dbJson, options?.Type  ?? this));
-            }
-            return {
-                collection: arr, //JsonConvert.fromJSON<TOut[]>(doc.collection, { Type: options?.Type }),
-                total: doc.total[0]?.count ?? 0
-            };
-        });
     }
 
-    static async count<T extends typeof MongoEntity>(query?: FilterQuery<T>) {
+    static async count<T extends typeof MongoEntity>(query?: Filter<T>) {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_count, coll, query, null);
+        return db_countAsync(coll, query);
     }
     static async upsert<T extends MongoEntity>(instance: T): Promise<T> {
         return EntityMethods.save(instance);
@@ -197,20 +208,23 @@ export class MongoEntity<T = any> extends Serializable<T> {
 
     static async patch<T extends MongoEntity>(
         instance: T
-        , patch: Partial<T> | UpdateQuery<T>
+        , patch: Partial<T> | UpdateFilter<T>
     ): Promise<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patch(coll, instance, patch);
     }
     static async patchDeeply<T extends MongoEntity>(
         instance: T
-        , patch: Partial<T> | UpdateQuery<T>
+        , patch: Partial<T> | UpdateFilter<T>
     ): Promise<T> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patch(coll, instance, patch, { deep: true });
     }
 
-    static async patchMany<T extends MongoEntity>(this: Constructor<T>, arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]): Promise<void> {
+    static async patchMany<T extends MongoEntity>(
+        this: Constructor<T>
+        , arr: [MongoLib.Filter<T>, DeepPartial<T> | UpdateFilter<T>][]
+    ) {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchMany(coll, arr);
     }
@@ -220,44 +234,44 @@ export class MongoEntity<T = any> extends Serializable<T> {
      */
     static async patchDeeplyBy<T extends MongoEntity>(
         this: Constructor<T>
-        , finder: MongoLib.FilterQuery<T>
+        , finder: MongoLib.Filter<T>
         , patch: DeepPartial<T>
-    ): Promise<MongoLib.WriteOpResult> {
+    ): Promise<MongoLib.UpdateResult> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchBy(coll, finder, patch, { deep: true });
     }
     static async patchBy<T extends MongoEntity>(
         this: Constructor<T>
-        , finder: MongoLib.FilterQuery<T>
-        , patch: Partial<T> | UpdateQuery<T>
-    ): Promise<MongoLib.WriteOpResult> {
+        , finder: MongoLib.Filter<T>
+        , patch: Partial<T> | UpdateFilter<T>
+    ): Promise<MongoLib.UpdateResult> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchBy(coll, finder, patch);
     }
 
     static async patchMultipleBy<T extends MongoEntity>(
         this: Constructor<T>
-        , finder: MongoLib.FilterQuery<T>
-        , patch: DeepPartial<T> | UpdateQuery<T>
-    ): Promise<MongoLib.WriteOpResult> {
+        , finder: MongoLib.Filter<T>
+        , patch: DeepPartial<T> | UpdateFilter<T>
+    ): Promise<UpdateResult | Document> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchMultipleBy(coll, finder, patch);
     }
     static async patchMultipleDeeplyBy<T extends MongoEntity>(
         this: Constructor<T>
-        , finder: MongoLib.FilterQuery<T>
-        , patch: DeepPartial<T> | UpdateQuery<T>
-    ): Promise<MongoLib.WriteOpResult> {
+        , finder: MongoLib.Filter<T>
+        , patch: DeepPartial<T> | UpdateFilter<T>
+    ): Promise<UpdateResult | Document> {
         let coll = MongoMeta.getCollection(this);
         return EntityMethods.patchMultipleBy(coll, finder, patch, { deep: true });
     }
 
     static async getCollection(): Promise<Collection> {
         let coll = MongoMeta.getCollection(this);
-        return cb_toPromise(db_getCollection, coll);
+        return db_getCollectionAsync(coll);
     }
     static async getDb(server?: string): Promise<Db> {
-        return cb_toPromise(db_getDb, server);
+        return db_getDbAsync(server);
     }
     upsert(): Promise<this> {
         return EntityMethods.save(this);
@@ -269,12 +283,12 @@ export class MongoEntity<T = any> extends Serializable<T> {
 
     patch<T extends MongoEntity>(
         this: T
-        , patch: UpdateQuery<T> | DeepPartial<T>
+        , patch: UpdateFilter<T> | DeepPartial<T>
         , opts: { deep: true}
     ): Promise<T>
     patch<T extends MongoEntity>(
         this: T
-        , patch: UpdateQuery<T> | Partial<T>
+        , patch: UpdateFilter<T> | Partial<T>
         , opts?: { deep?: boolean}
     ): Promise<T> {
         let coll = MongoMeta.getCollection(this);
@@ -283,7 +297,7 @@ export class MongoEntity<T = any> extends Serializable<T> {
 }
 
 export interface IEntity {
-    _id: string
+    _id: any
 }
 
 export type Constructor<T = {}> = {
@@ -295,25 +309,16 @@ export function MongoEntityFor<T>(Base: Constructor<T>) {
 }
 
 namespace EntityMethods {
-    export function save<T extends MongoEntity>(x: T): Promise<T> {
+    export async function save<T extends MongoEntity>(x: T): Promise<T> {
         let coll = MongoMeta.getCollection(x);
         let json = bson_fromObject(x)
-        let fn = json._id == null
-            ? db_insertSingle
-            : db_updateSingle
-            ;
-
-        return cb_toPromise(fn, coll, json).then(result => {
-            let array = result.ops;
-            if (array != null && x._id == null) {
-                if (is_Array(array) && array.length === 1) {
-                    x._id = array[0]._id
-                } else {
-                    return Promise.reject('<mongo:insert-single> expected an array in callback');
-                }
-            }
+        if (json._id == null) {
+            let inserted = await db_insertSingleAsync(coll, json);
+            json._id = x._id = inserted.insertedId;
             return x;
-        });
+        }
+        let updated = await db_updateSingleAsync(coll, json);
+        return x;
     }
     export async function saveBy<T extends MongoEntity>(finder: TFindQuery<T>, x: T, Type?): Promise<T> {
         Type = Type ?? x.constructor;
@@ -322,19 +327,18 @@ namespace EntityMethods {
             return Promise.reject(new Error(`<class:patch> 'Collection' is not defined for ${Type.name}`));
         }
         let json = bson_fromObject(x, Type);
-        let result: MongoLib.UpdateWriteOpResult = await cb_toPromise(
-            db_upsertSingleBy,
+        let result: MongoLib.UpdateResult = await db_upsertSingleByAsync(
             coll,
-            <any> finder,
+            finder,
             json
         );
-        if (result.upsertedId?._id && x._id == null) {
-            (x as any)._id = result.upsertedId._id;
+        if ((result.upsertedId as any)?._id && x._id == null) {
+            (x as any)._id = (result.upsertedId as any)._id;
         }
         return x as any;
     }
 
-    export function saveMany<T extends MongoEntity>(arr: T[], Type?): Promise<T[]> {
+    export async function saveMany<T extends MongoEntity>(arr: T[], Type?): Promise<T[]> {
         if (arr == null || arr.length === 0) {
             return Promise.resolve([]);
         }
@@ -356,6 +360,35 @@ namespace EntityMethods {
             }
             update.push(json);
         }
+
+        let [
+            insertResult,
+            updateResult
+        ] = await Promise.all([
+            insert.length > 0 ? db_insertManyAsync(coll, insert) : null,
+            update.length > 0 ? db_updateManyAsync(coll, update) : null,
+        ]);
+        if (insertResult != null) {
+            let ops = insertResult.insertedIds
+            if (ops == null) {
+                throw new Error('<mongo:bulk insert> array expected');
+            }
+            /**
+            *   @TODO make sure if mongodb returns an array of inserted documents
+            *   in the same order as it was passed to the insert method
+            */
+            for (var i = 0; i < insertIndexes.length; i++) {
+                let index = insertIndexes[i];
+                let id = ops[i];
+                if (id == null) {
+                    console.log('Invalid key on insert', i, ops);
+                    throw new Error(`Invalid key`);
+                }
+                arr[index]._id = id;
+            }
+        }
+
+        return arr;
 
         let awaitCount = insert.length > 0 && update.length > 0 ? 2 : 1;
         let dfr = new class_Dfr;
@@ -406,21 +439,30 @@ namespace EntityMethods {
         Type = Type ?? arr[0].constructor;
         let coll = MongoMeta.getCollection(Type);
         let jsons = arr.map(x => bson_fromObject(x, Type));
-        let result: MongoLib.BulkWriteResult = await cb_toPromise(
-            db_upsertManyBy,
+        let result: MongoLib.BulkWriteResult = await db_upsertManyByAsync(
             coll,
-            <any> finder,
+            finder,
             jsons
         );
+        let upserted = result.getUpsertedIds();
+        for (let i = 0; i < upserted.length; i++) {
+            let { index, _id } = upserted[i];
+            let x: any = arr[index];
+            if (x._id == null) {
+                x._id = _id;
+            } else if (String(x._id) !== String(upserted[i])) {
+                throw new Error(`Unexpected missmatch: ${x._id} != ${upserted[i]}`);
+            }
+        }
         return arr;
     }
 
     export function patchBy<T extends MongoEntity>(
         coll: TDbCollection
-        , finder: MongoLib.FilterQuery<T>
-        , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
-        , opts?: { deep?: boolean }): Promise<MongoLib.WriteOpResult> {
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
+        , finder: MongoLib.Filter<T>
+        , patch: DeepPartial<T> | Partial<T> | UpdateFilter<T>
+        , opts?: { deep?: boolean }): Promise<MongoLib.UpdateResult> {
+        let update = obj_partialToUpdateFilter(patch, false, opts?.deep, coll);
         return cb_toPromise(
             db_patchSingleBy,
             coll,
@@ -430,65 +472,70 @@ namespace EntityMethods {
     }
     export function patchMultipleBy<T extends MongoEntity>(
         coll: TDbCollection
-        , finder: MongoLib.FilterQuery<T>
-        , patch: DeepPartial<T> | UpdateQuery<T>
+        , finder: MongoLib.Filter<T>
+        , patch: DeepPartial<T> | UpdateFilter<T>
         , opts?: { deep?: boolean }
-    ): Promise<MongoLib.WriteOpResult> {
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
-        return cb_toPromise(
-            db_patchMultipleBy,
+    ): Promise<UpdateResult | Document> {
+        let update = obj_partialToUpdateFilter(patch, false, opts?.deep, coll);
+        return db_patchMultipleByAsync(
             coll,
             finder,
             update
         );
     }
 
-    export function patch<T extends MongoEntity>(
+    export async function patch<T extends MongoEntity>(
         coll: TDbCollection
         , instance: T
-        , patch: DeepPartial<T> | Partial<T> | UpdateQuery<T>
+        , patch: DeepPartial<T> | Partial<T> | UpdateFilter<T>
         , opts?: { deep?: boolean }
     ): Promise<T> {
         let id = instance._id;
         if (id == null) {
             return Promise.reject(new Error(`<patch> '_id' is not defined for ${coll}`));
         }
-        let update = obj_partialToUpdateQuery(patch, false, opts?.deep, coll);
+        let update = obj_partialToUpdateFilter(patch, false, opts?.deep, coll);
         obj_patch(instance, update);
-        return cb_toPromise(
-            db_patchSingle,
+
+        let result = await db_patchSingleAsync(
             coll,
             id,
             update
-        ).then(_ => instance);
+        );
+        return instance;
     }
     export function patchMany<T extends MongoEntity>(
         coll: TDbCollection
-        , arr: [MongoLib.FilterQuery<T>, DeepPartial<T> | UpdateQuery<T>][]
+        , arr: [MongoLib.Filter<T>, DeepPartial<T> | UpdateFilter<T>][]
         , opts?: { deep?: boolean }
     ) {
         if (opts?.deep) {
             for (let i = 0; i < arr.length; i++) {
-                arr[i][1] = obj_partialToUpdateQuery(arr[i][1], false, /* deep */ true, coll);
+                arr[i][1] = obj_partialToUpdateFilter(arr[i][1], false, /* deep */ true, coll);
             }
         }
-        return cb_toPromise(
-            db_patchMany,
-            coll,
-            arr
-        );
+        return db_patchManyAsync(coll, arr);
     }
 
-    export function del(coll: TDbCollection, entity: { _id: string | Object }) {
+    // export function del(coll: TDbCollection, entity: { _id: string | Object }) {
+    //     if (coll == null) {
+    //         return Promise.reject(new Error(`Delete for ${entity._id} failed as Collection is not set`));
+    //     }
+    //     if (entity._id == null) {
+    //         return Promise.reject(new Error(`Delete in ${coll} failed as ID is undefined`));
+    //     }
+    //     return cb_toPromise(db_remove, coll, { _id: entity._id }, true).then(x => {
+    //         return x.result;
+    //     });
+    // }
+    export function del (coll: TDbCollection, entity: { _id: string | Object }) {
         if (coll == null) {
             return Promise.reject(new Error(`Delete for ${entity._id} failed as Collection is not set`));
         }
         if (entity._id == null) {
             return Promise.reject(new Error(`Delete in ${coll} failed as ID is undefined`));
         }
-        return cb_toPromise(db_remove, coll, { _id: entity._id }, true).then(x => {
-            return x.result;
-        });
+        return db_removeAsync(coll, { _id: entity._id }, true);
     }
     export function delMany(coll: TDbCollection, arr: { _id: string | Object }[]) {
         if (coll == null) {
@@ -501,9 +548,6 @@ namespace EntityMethods {
                 ids.push(x._id);
             }
         }
-
-        return cb_toPromise(db_remove, coll, { _id: { $in: ids } }, false).then(x => {
-            return x.result;
-        });
+        return db_removeAsync(coll, { _id: { $in: ids } }, false);
     }
 }
