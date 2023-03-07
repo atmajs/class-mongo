@@ -65,7 +65,8 @@ export function setts_define (setts: IMongoSettings | IMongoSettings[]) {
 export function setts_getConnectionString(server: string = 'default') {
     let setts = server == null || server === 'default' ? DefaultServer : Servers[server];
     if (setts == null) {
-        throw new Error(`Server ${server} options are not set`);
+        let r = Math.random();
+        throw new Error(`Server ${server} options are not set ${r}`);
     }
     if (setts.connection != null) {
         return setts.connection;

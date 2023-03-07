@@ -2,20 +2,23 @@ import { table, index } from '../src/decos';
 import { Serializable } from 'class-json';
 import { MongoSettings, MongoIndexes } from '../src/export';
 import { MongoEntity, MongoEntityFor } from '../src/MongoEntity';
-import { db_getCollection } from '../src/mongo/Driver';
+import { db_getCollection, db_getCollectionAsync, db_remove } from '../src/mongo/Driver';
+import { promise } from '../src/utils/promise';
 
 
 UTest({
-    $before (done) {
+    async $before () {
         MongoSettings.define({
             name: 'testDb',
             db: 'class-store-mongo-test'
         });
-        db_getCollection({ collection: 'foos', server: 'testDb' }, (error, coll) => {
-            coll?.drop(done as any);
-        });
+        let coll = await db_getCollectionAsync({ collection: 'foos', server: 'testDb' })
+        try {
+            await coll?.drop();
+        } catch (error) { }
     },
     async 'should create and resolve instance' () {
+
         class Foo extends Serializable<Foo> {
             _id: string
             letter: string
@@ -50,7 +53,6 @@ UTest({
         '> save next letter'
         let nextSaved = new FooDb({ letter: 'c' });
         await nextSaved.upsert();
-
         '> fetch all'
         let all = await FooDb.fetchMany();
         eq_(all.length, 2);
@@ -63,6 +65,7 @@ UTest({
         '>> check is single'
         let allAfterDelete = await FooDb.fetchMany();
         eq_(allAfterDelete.length, 1);
+
     },
     async 'should create indexes' () {
         class Foo {
@@ -86,7 +89,7 @@ UTest({
     },
 
 
-    async 'should throw as db not found by name' () {
+    async '!should throw as db not found by name' () {
         @table('foos', { server: 'fake' })
         class FooDb extends MongoEntity<FooDb> {
             _id: string
@@ -101,5 +104,8 @@ UTest({
             error = err;
         }
         has_(error?.message, 'fake');
+
+        await promise.wait(500);
     }
 })
+

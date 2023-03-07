@@ -11,6 +11,7 @@ import { deprecated_log } from '../utils/deprecated';
 import { bson_normalizeQuery } from '../utils/bson';
 import { IEntity } from '../MongoEntity';
 import type { Callback, UpdateResult, Document } from 'mongodb';
+import { promise } from '../utils/promise';
 
 
 export type IndexSpecification<T> = string | string[] | Record<keyof T, number>
@@ -21,38 +22,38 @@ export interface IndexOptions {
     sparse?: boolean
     [ key: string]: any
 }
-export interface IndexRaw {
-    key: { [property: string]: string | number }
-    name?: string
-    unique?: boolean
-    sparse?: boolean
-    [ key: string]: any
-}
+export type IndexRaw = MongoLib.IndexDescription
+// {
+//     key: { [property: string]: string | number }
+//     name?: string
+//     unique?: boolean
+//     sparse?: boolean
+//     [ key: string]: any
+// }
 
 
 export { core_profiler_getData as db_profiler_getData } from './DriverProfiler';
 export { core_profiler_toggle as db_profiler_toggle } from './DriverProfiler';
 
-function withDb(onError, server: string, fn: (db: MongoLib.Db) => void) {
-    let db = core.getDb(server);
-    if (db == null) {
-        core.connect(server, (err, db) => {
-            if (err) {
-                onError(err);
-                return;
-            }
-            fn(db);
-        });
+async function withDb(onError, server: string, fn: (db: MongoLib.Db) => void) {
+    let cachedDB = core.getDb(server);
+    if (cachedDB == null) {
+        let [err, db] = await promise.toCallback(core.connect(server));
+        if (err) {
+            onError(err);
+            return;
+        }
+        fn(db);
         return;
     }
-    fn(db);
+    fn(cachedDB);
 }
 
 function withDbAsync<TResult> (server: string, fn: (db: MongoLib.Db) => Promise<TResult>): Promise<TResult> {
     let db = core.getDb(server);
     if (db == null) {
         return new Promise((resolve, reject) => {
-            core.connect(server, (err, db) => {
+            promise.toCallback(core.connect(server), (err, db) => {
                 if (err) {
                     reject(err);
                     return;
@@ -201,21 +202,25 @@ export function db_countAsync<T = any>(
 };
 
 
-export function db_insert(meta:TDbCollection, data, callback) {
-    withDb(callback, meta.server, db => {
-        db
-            .collection(meta.collection)
-            .insert(data, {}, callback);
-    });
-};
+// export function db_insert(meta:TDbCollection, data, callback) {
+//     withDb(callback, meta.server, db => {
+//         promise.toCallback(
+//             db
+//                 .collection(meta.collection)
+//                 .insert(data, {})
+//             , callback
+//         );
+//     });
+// };
 export function db_insertSingle(meta: TDbCollection, data, callback) {
     withDb(callback, meta.server, db => {
-        db
+        promise.toCallback(db
             .collection(meta.collection)
-            .insertOne(data, {}, callback);
+            .insertOne(data, {}), callback);
     });
 };
 export function db_insertSingleAsync(meta: TDbCollection, data) {
+
     return withDbAsync(meta.server, db => {
         return db
             .collection(meta.collection)
@@ -224,9 +229,9 @@ export function db_insertSingleAsync(meta: TDbCollection, data) {
 };
 export function db_insertMany(meta: TDbCollection, data, callback) {
     withDb(callback, meta.server, db => {
-        db
+        promise.toCallback(db
             .collection(meta.collection)
-            .insertMany(data, {}, callback);
+            .insertMany(data, {}), callback);
     });
 };
 export function db_insertManyAsync(meta: TDbCollection, data) {
@@ -420,7 +425,7 @@ export async function db_removeAsync(meta: TDbCollection, query, isSingle) {
 export function db_ensureIndexes(meta: TDbCollection, indexes: IndexRaw[], callback) {
     withDb(callback, meta.server, db => {
         let dbCollection = db.collection(meta.collection);
-        dbCollection.createIndexes(indexes, callback);
+        promise.toCallback(dbCollection.createIndexes(indexes), callback);
     });
 
 };

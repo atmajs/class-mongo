@@ -100,21 +100,26 @@ export class User extends MongoEntity<User> {
 
 - `1` [class MongoEntity](#1-mongoentity)
 	- `1.01` [static fetch](#101-static-fetch)
-	- `1.02` [static fetchMany](#102-static-fetchmany)
-    - `1.03` [static count](#103-static-count)
-    - `1.04` [static upsert](#104-static-upsert)
-    - `1.05` [static upsertMany](#105-static-upsertmany)
-    - `1.06` [static upsertManyBy](#105-static-upsertmanyby)
-    - `1.07` [static patch](#106-static-patch)
-    - `1.08` [static del](#107-static-del)
-    - `1.09` [static delMany](#108-static-delmany)
+    - `1.02` [static fetchPartial](#101-static-fetch-partial)
+	- `1.03` [static fetchMany](#102-static-fetchmany)
+    - `1.04` [static fetchManyPartial](#102-static-fetchmany-partial)
+    - `1.05` [static fetchManyPaged](#102-static-fetchmany-paged)
+    - `1.06` [static fetchManyPagedPartial](#102-static-fetchmany-paged-partial)
+    - `1.07` [static count](#103-static-count)
+    - `1.08` [static upsert](#104-static-upsert)
+    - `1.09` [static upsertBy](#104-static-upsert)
+    - `1.10` [static upsertMany](#105-static-upsertmany)
+    - `1.11` [static upsertManyBy](#105-static-upsertmanyby)
+    - `1.12` [static patch](#106-static-patch)
+    - `1.13` [static del](#107-static-del)
+    - `1.14` [static delMany](#108-static-delmany)
 
-    - `1.10` [static getCollection](#109-getcollection)
-    - `1.11` [static getDb](#110-static-getdb)
+    - `1.15` [static getCollection](#109-getcollection)
+    - `1.16` [static getDb](#110-static-getdb)
 
-    - `1.12` [.upsert](#111-upsert)
-    - `1.13` [.patch](#112-patch)
-    - `1.14` [.del](#113-del)
+    - `1.17` [.upsert](#111-upsert)
+    - `1.18` [.patch](#112-patch)
+    - `1.19` [.del](#113-del)
 
 
 - `2` [namespace MongoSettings](#2-namespace-mongosettings)
@@ -136,5 +141,150 @@ export class User extends MongoEntity<User> {
 
 ----
 
+## 1 `MongoEntity`
+
+#### `1.01` `static fetch`
+
+- Parameters: [#findOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#findOne)
+- Returns: `class instance`
+
+```typescript
+let user = await UserEntity.fetch({ username: 'foo' });
+```
+
+#### `1.02` `static fetchPartial`
+
+Similar to `fetch` but has strongly typed **Input** projection and strongly typed **Output** partial entity model.
+
+- Parameters: [#findOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#findOne)
+- Returns: class instance with omitted fields not included in `projection`
+
+```typescript
+let user = await UserEntity.fetchPartial({ username: 'foo' }, {
+    projection: {
+        email: 1
+    }
+});
+
+// User is of type Pick<UserEntity, 'email'>
+console.log(user.email); // OK
+console.log(user.username); // TypeScript Error
+```
+
+#### `1.03` `static fetchMany`
+- Parameters: [#find](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#find)
+- Returns: `array of class instances`
+
+```typescript
+let users = await UserEntity.fetchMany({ visits: { $gte: 100 }});
+```
+
+#### `1.03` `static fetchManyPartial`
+- Parameters: [#find](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#find)
+- Returns: array of class instances with omitted fields not included in `projection`
+
+```typescript
+let users = await UserEntity.fetchMany({
+    visits: { $gte: 100 }
+}, {
+    projection: {  username: 1 }
+});
+```
+
+
+#### `1.03` `static fetchManyPaged`
+
+Similar to `fetchMany` but requires `limit` and `skip`, returns also `total` amount of documents.
+
+- Parameters: [#find](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#find)
+- Returns: ` { collection: InstanceType<T>[], total: number } `
+
+```typescript
+let users = await UserEntity.fetchMany({
+    visits: { $gte: 100 }
+}, {
+    sort: { username: 1 },
+    limit: 50,
+    skip: 0
+});
+```
+
+#### `1.03` `static fetchManyPagedPartial`
+
+Similar to `fetchManyPaged` but also requires `projection` field and returns strongly types models.
+
+- Parameters: [#find](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#find)
+- Returns: ` { collection: InstanceType<Partial<T>>[], total: number } `
+
+```typescript
+let users = await UserEntity.fetchMany({
+    visits: { $gte: 100 }
+}, {
+    sort: { username: 1 },
+    limit: 50,
+    skip: 0
+});
+```
+
+#### `1.03` `static count`
+
+- Parameters: [#countDocuments](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#countDocuments)
+- Returns: `number`
+
+#### `1.05` `static upsert`
+
+- Parameters: [#updateOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#updateOne) / [#insertOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#insertOne)
+- Returns: class entity (with `_id` field set in case of `insert` action)
+
+If `_id` is not present the model will be inserted, otherwise updated.
+
+```typescript
+let user = await UserEntity.upsert({ username: 'foo', email: 'foo@bar.foo' });
+```
+
+#### `1.05` `static upsertBy`
+
+- Parameters: [#updateOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#updateOne) / [#insertOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#insertOne)
+- Returns: class entity (with `_id` field set in case of `insert` action)
+
+Inserts or updates the document based on the field value
+
+```typescript
+let user = await UserEntity.upsertBy('username', { username: 'foo', email: 'foo@bar.foo' }, {});
+```
+
+
+#### `1.05` `static upsertMany`
+
+- Parameters: [#updateOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#updateOne) / [#insertOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#insertOne)
+- Returns: array of class entities
+
+#### `1.05` `static upsertManyBy`
+
+- Parameters: [#updateOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#updateOne) / [#insertOne](https://mongodb.github.io/node-mongodb-native/5.1/classes/Collection.html#insertOne)
+- Returns: array of class entities
+
+
+
+## 2 `MongoSettings`
+
+#### `2.1` `define`
+
+Configurate mongo connection before making any mongodb requests
+
+```typescript
+import { MongoSettings } from 'class-mongo';
+
+MongoSettings.define({
+    db: 'fooTables'
+    connection: 'connection_string';
+    params: {
+        // additional parameters if needed
+    }
+});
+
+```
+
+----
 :copyright: MIT - Atma.js
 

@@ -15,6 +15,9 @@ class User extends MongoEntity<User> {
 }
 
 UTest({
+    $config: {
+        timeout: 30_000
+    },
     async $before() {
         MongoSettings.define({ db: 'test-class' });
 

@@ -26,11 +26,11 @@ export namespace DriverUtils {
         if (value == null) {
             return value;
         }
-        let { ObjectID } = core.getMongoLib();
+        let { ObjectId } = core.getMongoLib();
         if (typeof value === 'string' && value.length === 24) {
-            return new ObjectID(value);
+            return new ObjectId(value);
         }
-        if (value instanceof ObjectID) {
+        if (value instanceof ObjectId) {
             return value;
         }
 

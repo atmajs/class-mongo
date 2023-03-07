@@ -1,3 +1,5 @@
+import memd from 'memd';
+
 import type { Db, Filter, FindOptions, Callback, WithId, Document, UpdateResult, UpdateFilter, DeleteResult, BulkWriteResult } from 'mongodb'
 import { setts_getConnectionString, setts_getParams, setts_getDbName } from './Settings';
 import { IAggrPipeline } from './DriverTypes';
@@ -7,6 +9,8 @@ import { obj_partialToUpdateFilter } from '../utils/patchObject';
 import { TDbCollection } from '../types/TDbCollection';
 import { IEntity } from '../MongoEntity';
 
+import { promise } from '../utils/promise';
+
 
 export namespace core {
     let mongoLib: typeof MongoLib = null;
@@ -15,8 +19,8 @@ export namespace core {
         return Connections.getDb(server);
     };
 
-    export function connect(server: string, cb: (error, db: Db) => void) {
-        Connections.connect(server, null, cb);
+    export async function connect(server: string): Promise<Db> {
+        return Connections.connect(server);
     };
 
     export function getMongoLib(): typeof MongoLib {
@@ -32,9 +36,9 @@ export namespace core {
 
         let c = db.collection(coll);
         if (options == null) {
-            return c.findOne(query, callback);
+            return promise.toCallback(c.findOne(query), callback);
         }
-        c.findOne(query, options, callback);
+        promise.toCallback(c.findOne(query, options), callback);
     };
     export function findSingleAsync<T extends IEntity = any>(
         db: MongoLib.Db
@@ -55,7 +59,7 @@ export namespace core {
 
         let c = db.collection(coll);
         let cursor = c.find(query, options);
-        cursor.toArray(callback);
+        promise.toCallback(cursor.toArray());
     };
     export async function findManyAsync<T extends IEntity = any>(
         db: MongoLib.Db
@@ -77,12 +81,12 @@ export namespace core {
 
         let c = db.collection(coll);
         let cursor = c.find(query, options);
-        cursor.count((error, total) => {
+        promise.toCallback(cursor.count(), (error, total) => {
             if (error) {
                 callback(error, null);
                 return;
             }
-            cursor.toArray((error, arr) => {
+            promise.toCallback(cursor.toArray(), (error, arr) => {
                 if (error) {
                     callback(error, null);
                     return;
@@ -122,7 +126,7 @@ export namespace core {
 
         let c = db.collection(coll);
         let cursor = c.aggregate(pipeline, options);
-        cursor.toArray(callback);
+        promise.toCallback(cursor.toArray(), callback);
     };
     export function aggregateAsync<T = any[]>(db: MongoLib.Db
         , coll: string
@@ -143,9 +147,9 @@ export namespace core {
 
         let update = obj_partialToUpdateFilter(data);
 
-        db
+        promise.toCallback(db
             .collection(coll)
-            .updateOne(query, update, opt_upsertSingle, callback);
+            .updateOne(query, update, opt_upsertSingle), callback);
     };
     export function upsertSingleAsync<T = any>(
         db: MongoLib.Db
@@ -318,9 +322,9 @@ export namespace core {
             });
             return;
         }
-        db
+        promise.toCallback(db
             .collection(meta.collection)
-            .updateOne(query, update, opt_updateSingle, callback);
+            .updateOne(query, update, opt_updateSingle), callback);
     };
     export async function updateSingleAsync<T = any>(db: MongoLib.Db
         , meta: TDbCollection
@@ -359,9 +363,9 @@ export namespace core {
             });
             return;
         }
-        db
+        promise.toCallback(db
             .collection(meta.collection)
-            .updateMany(query, update, opt_updateMultiple, callback);
+            .updateMany(query, update, opt_updateMultiple), callback);
     };
     export async function updateMultipleAsync<T extends IEntity = any>(db: MongoLib.Db
         , meta: TDbCollection
@@ -455,9 +459,10 @@ export namespace core {
         , coll: string
         , query: Filter<T>
         , callback: Callback<DeleteResult> /*<error, count>*/) {
-        db
+
+        promise.toCallback(db
             .collection(coll)
-            .deleteOne(query, callback);
+            .deleteOne(query), callback);
     };
     export async function removeSingleAsync<T = any>(
         db: MongoLib.Db
@@ -473,9 +478,9 @@ export namespace core {
         , query: Filter<T>
         , callback: Callback<DeleteResult> /*<error, count>*/) {
 
-        db
+        promise.toCallback(db
             .collection(coll)
-            .deleteMany(query, callback);
+            .deleteMany(query), callback);
     };
     export function removeManyAsync<T = any>(
         db: MongoLib.Db
@@ -493,9 +498,9 @@ export namespace core {
         , options: MongoLib.CountDocumentsOptions
         , callback: Callback<number>/*<error, count>*/) {
 
-        db
+        promise.toCallback(db
             .collection(coll)
-            .countDocuments(query, options, callback);
+            .countDocuments(query, options), callback);
     }
     export function countAsync<T = any>(db: MongoLib.Db
         , coll: string
@@ -513,7 +518,7 @@ export namespace core {
         , operations: MongoLib.AnyBulkWriteOperation<T>[]
         , callback: MongoLib.Callback<MongoLib.BulkWriteResult>) {
 
-        db.collection(coll).bulkWrite(operations, callback);
+        promise.toCallback(db.collection(coll).bulkWrite(operations as any), callback);
     };
 
     export function bulkWriteAsync <T extends { _id: any }>(
@@ -521,7 +526,7 @@ export namespace core {
         , coll: string
         , operations: MongoLib.AnyBulkWriteOperation<T>[]) {
 
-        return db.collection(coll).bulkWrite(operations);
+        return db.collection(coll).bulkWrite(operations as any);
     };
 }
 
@@ -567,8 +572,8 @@ namespace Connections {
     let _connections: { [url: string]: Connection } = {};
 
     class Connection {
-        private connecting = false;
-        private listeners = [];
+        // private connecting = false;
+        // private listeners = [];
 
         client: MongoLib.MongoClient
         db: MongoLib.Db
@@ -583,31 +588,30 @@ namespace Connections {
             }
         }
 
-        public connect(callback) {
-            if (this.db != null || this.error != null) {
-                callback(this.error, this.db);
-                return;
+        @memd.deco.memoize({ perInstance: true })
+        public async connect(): Promise<Db> {
+            if (this.error != null) {
+                throw this.error;
             }
-            this.listeners.push(callback);
-            if (this.connecting) {
-                return;
+            if (this.db != null) {
+                return this.db;
             }
 
-            this.connecting = true;
-
-            core.getMongoLib()
+            let [ error, client ] = await promise.toCallback(core
+                .getMongoLib()
                 .MongoClient
-                .connect(this.url, this.params, (error, client) => {
-                    this.connecting = false;
-                    this.error = error;
-                    this.client = client;
-                    this.db = client?.db(setts_getDbName());
+                .connect(this.url, this.params)
+            );
 
-                    let arr = this.listeners;
-                    for (let i = 0; i < arr.length; i++) {
-                        arr[i](this.error, this.db);
-                    }
-                });
+            if (error) {
+                throw error;
+            }
+
+            this.error = error;
+            this.client = client;
+            this.db = client?.db(setts_getDbName());
+
+            return this.db;
         }
     }
 
@@ -618,20 +622,20 @@ namespace Connections {
         return _connections[server]?.db;
     }
 
-    export function connect(server: string = null, params: any = null, callback) {
+    export async function connect(server: string = null, params: any = null) {
         let connection = server == null ? _connection : _connections[server];
         if (connection) {
-            connection.connect(callback);
-            return;
+            return connection.connect();
         }
         let _url = setts_getConnectionString(server);
         let _params = params ?? setts_getParams(server);
+
 
         connection = new Connection(_url, _params);
 
         _connections[server] = connection;
         _connection = _connection ?? connection;
 
-        connection.connect(callback);
+        return connection.connect();
     };
 }

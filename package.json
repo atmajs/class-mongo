@@ -5,7 +5,7 @@
         "name": "Alexander Kit",
         "email": "alex.kit@atmajs.com"
     },
-    "version": "0.4.1",
+    "version": "5.0.0",
     "main": "./lib/class-mongo.js",
     "types": "./lib/class-mongo.d.ts",
     "repository": {
@@ -53,7 +53,8 @@
         "dynamicDependencies": [
             "^mongodb",
             "^atma-utils",
-            "^class-json"
+            "^class-json",
+            "^memd"
         ]
     },
     "atma": {
@@ -87,7 +88,8 @@
         "alot": "^0.2.93",
         "atma-utils": "^0.2.51",
         "class-mongo": "^0.3.7",
-        "mongodb": "^4.2.0"
+        "memd": "^0.3.12",
+        "mongodb": "^5.1.0"
     },
     "peerDependencies": {
         "class-json": "^0.3.6"

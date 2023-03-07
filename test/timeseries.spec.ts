@@ -3,7 +3,14 @@ import { table } from '../src/decos';
 import { MongoSettings } from '../src/export';
 import { CollectionHandler } from '../src/mongo/CollectionHandler';
 
-@table('weather', { collection: { timeseries: { timeField: "timestamp" } } })
+
+@table('weather', {
+   collection: {
+      timeseries: {
+         timeField: "timestamp"
+      }
+   }
+})
 class Weather extends MongoEntity<Weather> {
     metadata: { sensorId, type }
     timestamp: Date
@@ -16,8 +23,7 @@ UTest({
 
         const db = await MongoEntity.getDb();
         await db.dropDatabase();
-
-        await CollectionHandler.ensureCollections()
+        await CollectionHandler.ensureCollections();
     },
     async $after() {
         let db = await MongoEntity.getDb();

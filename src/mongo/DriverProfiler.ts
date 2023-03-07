@@ -75,100 +75,109 @@ export function core_profiler_toggle(enable, settings) {
         };
     }
 
-    core.findSingle = function (db, coll, query, options, callback /*<error, item>*/) {
-        _core_findSingle.apply(null, arguments);
-        _core_findSingle(
+    core.findSingle = async function (db, coll, query, options, callback) {
+        let result = await _core_findSingle.apply(null, arguments);
+        await _core_findSingle(
             db
             , coll
             , query
             , wrapOptions(options)
             , analizator(coll, query));
+        return result;
     };
     core.findSingleAsync = wrapSync(core.findSingle);
 
-    core.findMany = function (db, coll, query, options, callback /*<error, array>*/) {
-        _core_findMany.apply(null, arguments);
-        _core_findMany(
+    core.findMany = async function (db, coll, query, options, callback /*<error, array>*/) {
+        let result = await _core_findMany.apply(null, arguments);
+        await _core_findMany(
             db
             , coll
             , wrapQuery(query)
             , options
             , analizator(coll, query));
+        return result;
     };
     core.findManyAsync = wrapSync(core.findMany);
 
-    core.upsertSingle = function (db, coll, query, data, callback/*<error, stats>*/) {
-        _core_upsertSingle.apply(null, arguments);
-        _core_upsertSingle(
+    core.upsertSingle = async function (db, coll, query, data, callback/*<error, stats>*/) {
+        let result = await _core_upsertSingle.apply(null, arguments);
+        await _core_upsertSingle(
             db
             , coll
             , wrapQuery(query)
             , data
             , analizator(coll, query));
+        return result;
     };
     core.upsertSingleAsync = wrapSync(core.upsertSingle);
 
 
-    core.upsertMany = function (db, coll, array /*[[query, data]]*/, callback) {
-        _core_upsertMany.apply(null, arguments);
-        _core_upsertMany(
+    core.upsertMany = async function (db, coll, array /*[[query, data]]*/, callback) {
+        let result = await _core_upsertMany.apply(null, arguments);
+        await _core_upsertMany(
             db
             , coll
             , wrapMany(array)
             , analizator(coll, array));
+        return result;
     };
     core.upsertManyAsync = wrapSync(core.upsertMany);
 
-    core.updateSingle = function (db, meta, query, mod, callback /*<error, stats>*/) {
-        _core_updateSingle.apply(null, arguments);
-        _core_updateSingle(
+    core.updateSingle = async function (db, meta, query, mod, callback /*<error, stats>*/) {
+        let result = await _core_updateSingle.apply(null, arguments);
+        await _core_updateSingle(
             db
             , meta
             , wrapQuery(query)
             , mod
             , analizator(meta, query));
+        return result;
     };
     core.updateSingleAsync = wrapSync(core.updateSingle);
 
-    core.updateMany = function (db, coll, array/*[[query, data]]*/, callback) {
-        _core_updateMany.apply(null, arguments);
-        _core_updateMany(
+    core.updateMany = async function (db, coll, array/*[[query, data]]*/, callback) {
+        let result = await _core_updateMany.apply(null, arguments);
+        await _core_updateMany(
             db
             , coll
             , wrapMany(array)
             , analizator(coll, array));
+        return result;
     };
     core.updateManyAsync = wrapSync(core.updateMany);
 
-    core.removeSingle = function (db, coll, query, callback /*<error, count>*/) {
-        _core_removeSingle.apply(null, arguments);
+    core.removeSingle = async function (db, coll, query, callback /*<error, count>*/) {
+        let result = await _core_removeSingle.apply(null, arguments);
         _core_removeSingle(
             db
             , coll
             , wrapQuery(query)
             , analizator(coll, query));
+        return result;
     };
     core.removeSingleAsync = wrapSync(core.removeSingle);
 
 
-    core.removeMany = function (db, coll, query, callback /*<error, count>*/) {
-        _core_removeMany.apply(null, arguments);
+    core.removeMany = async function (db, coll, query, callback /*<error, count>*/) {
+        let result = await _core_removeMany.apply(null, arguments);
         _core_removeMany(
             db
             , coll
             , wrapQuery(query)
             , analizator(coll, query));
+        return result;
     };
     core.removeManyAsync = wrapSync(core.removeMany);
 
-    core.count = function (db, coll, query, options, callback/*<error, count>*/) {
-        _core_count.apply(null, arguments);
+    core.count = async function (db, coll, query, options, callback/*<error, count>*/) {
+        let result = await _core_count.apply(null, arguments);
         _core_count(
             db
             , coll
             , wrapQuery(query)
             , wrapOptions(null)
             , analizator(coll, query));
+        return result;
     };
     core.countAsync = wrapSync(core.count);
 
