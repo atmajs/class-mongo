@@ -1,6 +1,11 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
+general:
+  branches:
+    only:
+     - master
+
 orbs:
   # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/node
   node: circleci/node@5.1.0
@@ -14,6 +19,7 @@ jobs:
       - image: 'circleci/mongo:latest'
         environment:
           MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD:
     steps:
       - checkout
       - run:
