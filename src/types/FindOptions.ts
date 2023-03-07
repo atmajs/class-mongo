@@ -17,11 +17,27 @@ export type TProjection<T extends object> = {
         : (T[K] extends object ? (TProjection<T[K]> | number) : number)
   };
 
+// export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = {
+//     [K in Extract<keyof T, keyof P>]: (
+//         P[K] extends number
+//             ? (T[K])
+//             : (
+//                 T[K] extends Array<infer TArr>
+//                 ? (TArr extends object
+//                     ? TDeepPickByProjection<TArr, P[K]>
+//                     : never)[]
+//                 : (T[K] extends object
+//                     ? TDeepPickByProjection<T[K], P[K]>
+//                     : never)
+//             )
+//     )
+// } extends infer O ? { [K in keyof O]: O[K] } : never;
+
+
 export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = {
     [K in Extract<keyof T, keyof P>]: (
-        P[K] extends number
-            ? (T[K])
-            : (
+        P[K] extends object
+            ? (
                 T[K] extends Array<infer TArr>
                 ? (TArr extends object
                     ? TDeepPickByProjection<TArr, P[K]>
@@ -30,5 +46,6 @@ export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = 
                     ? TDeepPickByProjection<T[K], P[K]>
                     : never)
             )
+            : (T[K])
     )
 } extends infer O ? { [K in keyof O]: O[K] } : never;
