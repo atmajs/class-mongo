@@ -5,13 +5,14 @@
 <h2 align="center"> <code>class-mongo</code> / MongoDB persistence layer</h2>
 
 <p align="center">
-    <a href='https://travis-ci.com/atmajs/class-mongo' target='_blank'>
-        <img src='https://travis-ci.com/atmajs/class-mongo.png?branch=master' />
+    <a href='https://dl.circleci.com/status-badge/redirect/gh/atmajs/class-mongo/tree/master' target='_blank'>
+        <img src='https://dl.circleci.com/status-badge/img/gh/atmajs/class-mongo/tree/master.svg?style=svg' />
     </a>
     <a href='http://badge.fury.io/js/class-mongo' target='_blank'>
         <img src='https://badge.fury.io/js/class-mongo.svg' />
     </a>
 </p>
+
 
 Lightweight but powerful MongoDB ORM on top of class entities. Backed by [`mongodb`](https://www.npmjs.com/package/mongodb) native driver.
 

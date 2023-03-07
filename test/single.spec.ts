@@ -89,7 +89,7 @@ UTest({
     },
 
 
-    async '!should throw as db not found by name' () {
+    async 'should throw as db not found by name' () {
         @table('foos', { server: 'fake' })
         class FooDb extends MongoEntity<FooDb> {
             _id: string
