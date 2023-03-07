@@ -14,8 +14,8 @@
     },
     "devDependencies": {
         "@types/sinon": "^2.3.3",
-        "app-bundler": "0.0.75",
-        "atma": "^0.12.20",
+        "app-bundler": "^0.1.14",
+        "atma": "^0.15.17",
         "atma-loader-ts": "^1.1.19",
         "dts-bundle": "^0.7.3",
         "typedoc": "^0.21.4"
