@@ -59,23 +59,24 @@ export function setts_define (setts: IMongoSettings | IMongoSettings[]) {
             name: null
         });
     }
+    if (setts.ip == null && target.connection == null && typeof process !== 'undefined' && process.env?.MONGO_CONNECTION) {
+        target.connection = process.env.MONGO_CONNECTION;
+    }
 };
 
 
 export function setts_getConnectionString(server: string = 'default') {
     let setts = server == null || server === 'default' ? DefaultServer : Servers[server];
     if (setts == null) {
-        let r = Math.random();
-        throw new Error(`Server ${server} options are not set ${r}`);
-    }
-    if (setts.connection != null) {
-        return setts.connection;
-    }
-    if (setts.db == null) {
-        throw new Error(`Database for ${server} is not set`);
+        throw new Error(`Server ${server} options are not set`);
     }
     let { ip, port, db} = setts;
-    return `mongodb://${ip}:${port}/${db}`;
+    let uri = setts.connection ?? `mongodb://${ip}:${port}`;
+
+    if (db != null && uri.includes(db)) {
+        uri = uri.replace(/((:\d+))\/?([^\/\?]+|$)/, `/${db}`);
+    }
+    return uri;
 }
 
 export function setts_getParams (server: string = 'default') {

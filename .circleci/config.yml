@@ -19,18 +19,22 @@ jobs:
       - image: 'circleci/mongo:latest'
         environment:
           MONGO_INITDB_ROOT_USERNAME: admin
-          MONGO_INITDB_ROOT_PASSWORD:
+          MONGO_INITDB_ROOT_PASSWORD: 11111
     steps:
       - checkout
       - run:
-          name: NPM Install
-          command: npm install --force
+        name: NPM Install
+        command: npm install --force
       - run:
-          name: Build Project
-          command: npm run build
+        name: Build Project
+        command: npm run build
+
       - run:
-          name: Run tests
-          command: npm run test
+        name: Run tests
+        command: npm run test
+        environment:
+          MONGO_CONNECTION: 'mongodb://admin:11111@127.0.0.1:27017'
+
 
 workflows:
   # Inside the workflow, you provide the jobs you want to run, e.g this workflow runs the build-and-test job above.
