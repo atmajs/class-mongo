@@ -460,7 +460,7 @@ declare module 'class-mongo/types/FindOptions' {
         [K in keyof T]?: T[K] extends Array<infer TArr> ? (TArr extends object ? (TProjection<TArr> | number) : number) : (T[K] extends object ? (TProjection<T[K]> | number) : number);
     };
     export type TDeepPickByProjection<T extends object, P extends TProjection<T>> = {
-        [K in Extract<keyof T, keyof P>]: (P[K] extends number ? (T[K]) : (T[K] extends Array<infer TArr> ? (TArr extends object ? TDeepPickByProjection<TArr, P[K]> : never)[] : (T[K] extends object ? TDeepPickByProjection<T[K], P[K]> : never)));
+        [K in Extract<keyof T, keyof P>]: (P[K] extends object ? (T[K] extends Array<infer TArr> ? (TArr extends object ? TDeepPickByProjection<TArr, P[K]> : never)[] : (T[K] extends object ? TDeepPickByProjection<T[K], P[K]> : never)) : (T[K]));
     } extends infer O ? {
         [K in keyof O]: O[K];
     } : never;
@@ -486,15 +486,7 @@ declare module 'class-mongo/mongo/Driver' {
         sparse?: boolean;
         [key: string]: any;
     }
-    export interface IndexRaw {
-        key: {
-            [property: string]: string | number;
-        };
-        name?: string;
-        unique?: boolean;
-        sparse?: boolean;
-        [key: string]: any;
-    }
+    export type IndexRaw = MongoLib.IndexDescription;
     export { core_profiler_getData as db_profiler_getData } from 'class-mongo/mongo/DriverProfiler';
     export { core_profiler_toggle as db_profiler_toggle } from 'class-mongo/mongo/DriverProfiler';
     export function db_getCollection(meta: TDbCollection, cb: ICallback<MongoLib.Collection>): void;
@@ -502,7 +494,7 @@ declare module 'class-mongo/mongo/Driver' {
     export function db_getDb(server: string, callback: ICallback<MongoLib.Db>): void;
     export function db_getDbAsync(server?: string): Promise<MongoLib.Db>;
     export function db_findSingle<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions, callback: ICallback<T>): void;
-    export function db_findSingleAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions): Promise<MongoLib.WithId<MongoLib.Document>>;
+    export function db_findSingleAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions): Promise<MongoLib.WithId<MongoLib.BSON.Document>>;
     export function db_findMany<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.FindOptions, callback: ICallback<T[]>): void;
     export function db_findManyAsync<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.FindOptions): Promise<T[]>;
     export function db_findManyPaged<T extends IEntity = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: FindOptions<T> & MongoLib.FindOptions, callback: Callback<{
@@ -514,14 +506,13 @@ declare module 'class-mongo/mongo/Driver' {
         total: number;
     }>;
     export function db_aggregate<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.AggregateOptions, callback: Callback<T[]>): void;
-    export function db_aggregateAsync<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.AggregateOptions): Promise<MongoLib.Document[]>;
+    export function db_aggregateAsync<T = any>(meta: TDbCollection, pipeline: IAggrPipeline[], options: MongoLib.AggregateOptions): Promise<MongoLib.BSON.Document[]>;
     export function db_count<T = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options: MongoLib.CountDocumentsOptions, callback: ICallback<number>): void;
     export function db_countAsync<T = any>(meta: TDbCollection, query: MongoLib.Filter<T>, options?: MongoLib.CountDocumentsOptions): Promise<number>;
-    export function db_insert(meta: TDbCollection, data: any, callback: any): void;
     export function db_insertSingle(meta: TDbCollection, data: any, callback: any): void;
-    export function db_insertSingleAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertOneResult<MongoLib.Document>>;
+    export function db_insertSingleAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertOneResult<MongoLib.BSON.Document>>;
     export function db_insertMany(meta: TDbCollection, data: any, callback: any): void;
-    export function db_insertManyAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertManyResult<MongoLib.Document>>;
+    export function db_insertManyAsync(meta: TDbCollection, data: any): Promise<MongoLib.InsertManyResult<MongoLib.BSON.Document>>;
     export function db_updateSingle<T extends {
         _id: any;
     }>(meta: TDbCollection, data: T, callback: any): void;
@@ -600,7 +591,7 @@ declare module 'class-mongo/types/ITableSettings' {
 declare module 'class-mongo/types/Types' {
     import * as MongoLib from 'mongodb';
     export namespace Types {
-        function Decimal128(val: number | bigint | string | MongoLib.Decimal128): MongoLib.Decimal128;
+        function Decimal128(val: number | bigint | string | MongoLib.Decimal128): MongoLib.BSON.Decimal128;
         const Mapping: {
             decimal: typeof Decimal128;
         };
